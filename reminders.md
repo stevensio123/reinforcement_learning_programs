@@ -46,3 +46,8 @@ How to check branches.
 3. To check logs of changes committed, use `git log`.
     1. If you want more information on a log change, copy the ID and add to `git show <id>` to see changes made
 4. `git diff <branch/id 1> <branch/id 2>` can be used to check differences between branches or commit logs, leave variables blank (<>) to check difference between stage repository and currently edited repository.
+
+# Naming Conventions
+Follow PEP 8 style guide:
+- *snake_case* for functions / objects / instance/ files
+- *CapWords* for classes
