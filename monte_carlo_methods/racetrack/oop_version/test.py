@@ -1,17 +1,17 @@
 import racetrack_utils as utils
 import numpy as np
-race_track = ["########",
+race_track = ["####EEEE",
               "#NNNNNNE",
-              "#NN#####",
-              "#NN#####",
-              "#SS#####"]
+              "#NNNNNNE",
+              "#NNNNNNE",
+              "#NNNNN##",
+              "#SSSSS##"]
 
 print("\nTEST: racetrack object")
 racetrack = utils.Racetrack(race_track)
 print(f"racetrack list (cartesian):{racetrack.racetrack}")
 print(f"start locations: {racetrack.start_coord_list}")
 print(f"terminal locations: {racetrack.terminal_coord_list}")
-
 print(f"racetrack[7][3]: {racetrack.racetrack[7][3]}")
 
 
@@ -40,7 +40,7 @@ print(f"State values shape: {state_space.state_values.shape}")
 print(f"State value for (0,2,0,0): {state_space.get_state_value((0,2,0,0))}")
 
 print("\nTEST: behavior policy function")
-policy = utils.behavior_policy(state_space, epsilon=0.2)
+policy = utils.behavior_policy(state_space, epsilon=0.4)
 print(f"Policy shape: {policy.shape}")
 print(f"Policy for (0,2,0,0): {policy[0][2][0][0]}")
 print(f"Policy for (0,2,4,4): {policy[0][2][4][4]}")
@@ -49,5 +49,6 @@ print("\nTEST: Episode class")
 episode = utils.Episode(race_track, policy)
 episode.generate()
 print(f"Episode steps: {episode.steps}")
-print(f"Episode trajectory: {episode.episode}")
+print(f"Episode trajectory (first 3 steps): {episode.episode[:3]}") # print first 10 steps of episode
+print(f"Episode trajectory (last 3 steps): {episode.episode[-3:]}") # print last 3 steps of episode
 print(episode)
