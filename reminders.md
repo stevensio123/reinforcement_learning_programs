@@ -1,6 +1,8 @@
 ## Reminder for start-up usage:
 Notes to start a virtual environment and update it.
 
+Reminder that all data done in bash is locally downloaded data and not a constant updating direct link to github
+
 1. If not created, run `python -m venv .venv` to create a .venv directory as a virtual environment.
 2. Run `source .venv/bin/activate` to activate the virutal environment.
     1. Alternatively, some files (in Windows) is saved as 'source .venv/Scripts/activate' instead.
@@ -32,6 +34,11 @@ How to check branches.
 1. Run `git branch` to see all existing branches
     1. Run `git branch -d <branch name>` to delete a branch, note you may not be able to restore deleted branch once pushed
 2. If you are in the wrong branch, to switch branches `git switch <branch name>`.
+    1. 'git checkout <branch name>' is similar to git switch
+3. 'git checkout -b <branch name>' to create a new branch within your local repo, after you will need to set the upstream of this new branch to origin/<remote branch name>
+    1. You will then need to 'git pull' to update the branch to the newest commit of that branch
+4. Run 'git branch -a'  to see all branches (including hidden ones like remote branches)
+
 
 ## Notes:
 1. To check your working environment, use `which python` to check.
