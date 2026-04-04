@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import racetrack_utils as utils
 import random
 
 # initialize variables
@@ -58,23 +59,6 @@ def action_space(state):
           action_space.append([horizontal,vertical])
   return action_space
 
-def next_state(state, a):
-  x, y, vx, vy = state
-  vx += a[0]
-  vy += a[1]
-  x += vx
-  y += vy
-  try:
-    racetrack_list[x][y]
-  except IndexError:
-    start_coord = start_coord_list[np.random.randint(len(start_coord_list))] # randomise starting position
-    return (start_coord[0],start_coord[1],0,0)
-  if racetrack_list[x][y] == '#':
-    start_coord = start_coord_list[np.random.randint(len(start_coord_list))] # randomise starting position
-    return (start_coord[0],start_coord[1],0,0)
-  else:
-    return (x,y,vx,vy)
-
 def behavior_policy(state):
   # choose optimal / random action:
   action_space_ls = action_space(state)
@@ -93,39 +77,6 @@ def behavior_policy(state):
     action_idx = np.random.randint(len(action_space_ls))
     return(action_space_ls[action_idx])
 
-# Done to aid in each instances of a repeated function
-class generate_episode():
-
-  # Use to just keep track of all episodes created throughout the algorithm
-  total_episodes = 0
-
-  # Creates the instances with starting attributes
-  def __init__(self):
-  # no need to generate Reward (all = -1)
-    self.start_coord = start_coord_list[np.random.randint(len(start_coord_list))] # randomise starting position
-    self.current_state = (self.start_coord[0],self.start_coord[1],0,0)
-    self.current_coordinate = [self.start_coord[0],self.start_coord[1]]
-    self.new_state = ()
-    self.episode = []
-    self.counter = 0
-
-  # This can be the method to call for generating the episode
-  def generate(self, policy):
-    while self.current_coordinate not in end_coord_list:
-      action = behavior_policy(self.current_state)
-      self.episode.append((self.current_state,action))
-      self.new_state = next_state(self.current_state,action)
-      self.current_state = self.new_state
-      self.current_coordinate = [self.current_state[0],self.current_state[1]]
-      self.counter += 1
-  # [[s,a],...]
-    self.episode.append((self.current_state,[0,0]))
-    generate_episode.total_episodes += 1
-    print(f"episode generated, took ({self.counter} time steps)")
-
-  # To set out tracking statements, we can expand if needed.
-  def __str__(self):
-    return f"Total episodes generated: {generate_episode.total_episodes}"
 
 def incremental_prediction(episode):
   episode.reverse()
