@@ -125,7 +125,7 @@ class Episode(Racetrack):
         self.start_loc = self.start_coord_list[np.random.randint(len(self.start_coord_list))]
         self.episode = []
         self.policy = policy
-        self.steps = 0
+        self.steps = 1
 
     def generate(self):
         """
@@ -146,5 +146,9 @@ class Episode(Racetrack):
             else:
                 current_loc = [current_state[0],current_state[1]]
             self.steps += 1
+            if self.steps > 10000000: # to prevent infinite loop in case of bad policy
+                print("Episode generation stopped after 10000000 steps to prevent infinite loop.")
+                print(f"Last state: {current_state}")
+                break
     def __str__(self):
         return f"Total steps generated: {self.steps}"
