@@ -31,6 +31,20 @@ def get_action_space(state):
                     action_space.append([horizontal,vertical])
     return action_space
 
+class StateSpace():
+    """
+    class to represent state space of racetrack.
+    state value is initialized to random integer between -5 and 0 (inclusive) for each state.
+    """
+    def __init__(self, racetrack):
+        # dimensions represent:
+        # rows of race track, columns of race track, row-acceleration, col-acceleration
+        self.state_values = np.random.randint(-5,1,size=(len(racetrack),len(racetrack[0]),5,5))
+    
+    def get_state_value(self, state):
+        x, y, vx, vy = state
+        return self.state_values[x][y][vx][vy]
+
 class Racetrack():
     def __init__(self, racetrack):
         # reverse and transpose racetrack to match coordinate system (x rows, y rows)
