@@ -31,19 +31,49 @@ def get_action_space(state):
                     action_space.append([horizontal,vertical])
     return action_space
 
-class StateSpace():
+def behavior_policy(obj: StateSpace, epsilon=0.1):
     """
-    class to represent state space of racetrack.
-    state value is initialized to random integer between -5 and 0 (inclusive) for each state.
+    takes in a StateSpace object and epsilon value, 
+    returns an array with the same shape as the state space,
+    with the chosen action for each state according to the behavior policy as the elements.
     """
-    def __init__(self, racetrack):
-        # dimensions represent:
-        # rows of race track, columns of race track, row-acceleration, col-acceleration
-        self.state_values = np.random.randint(-5,1,size=(len(racetrack),len(racetrack[0]),5,5))
-    
-    def get_state_value(self, state):
-        x, y, vx, vy = state
-        return self.state_values[x][y][vx][vy]
+    state_values = obj.state_values
+    racetrack = obj.racetrack
+    start_locs = obj.start_locs()
+    #print(start_locs)
+    # use object array to store lists as elements (because there are two actions)
+    policy = np.empty(state_values.shape, dtype=object) 
+    for x in range(state_values.shape[0]):
+        for y in range(state_values.shape[1]):
+            for vx in range(state_values.shape[2]):
+                for vy in range(state_values.shape[3]):
+                    state = (x,y,vx,vy)
+                    # choose optimal / random action:
+                    action_space_ls = get_action_space(state)
+                    if random.random() > epsilon:
+                        # take optimal action according to current state values
+                        action_values = []
+                        for action in action_space_ls:
+                            next_state_idx = get_next_state(racetrack, state, action)
+                            if next_state_idx == False:
+                                # get value of random starting state if crash or out of bounds
+                                start_loc = start_locs[np.random.randint(len(start_locs))]
+                                next_state_idx = (start_loc[0], start_loc[1], 0, 0)   
+
+                                next_state_value = state_values[next_state_idx]
+                            else:
+                                # print(next_state_idx)
+                                next_state_value = state_values[next_state_idx]
+                            action_values.append(next_state_value)
+                        # to break ties by taking most progressive action
+                        action_idx = np.where(action_values == np.max(action_values))[0][-1]
+                        policy[x][y][vx][vy] = action_space_ls[action_idx]
+                    else:
+                        # take random action
+                        action_idx = np.random.randint(len(action_space_ls))
+                        policy[x][y][vx][vy] = action_space_ls[action_idx]
+    return policy
+
 
 class Racetrack():
     def __init__(self, racetrack):
@@ -65,6 +95,21 @@ class Racetrack():
                 if self.racetrack[i][j] == 'E':
                     end_coord_list.append([i,j])
         return end_coord_list
+
+class StateSpace(Racetrack):
+    """
+    class to represent state space of racetrack.
+    state value is initialized to random integer between -5 and 1 (inclusive) for each state.
+    """
+    def __init__(self, racetrack):
+        # dimensions represent:
+        # rows of race track, columns of race track, row-acceleration, col-acceleration
+        super().__init__(racetrack)
+        self.state_values = np.random.randint(-5,2,size=(len(racetrack[0]),len(racetrack),5,5))
+
+    def get_state_value(self, state):
+        x, y, vx, vy = state
+        return self.state_values[x][y][vx][vy]
 
 
 class Episode(Racetrack):
@@ -92,7 +137,7 @@ class Episode(Racetrack):
         terminal_locs = self.terminal_locs()
         current_loc = self.start_loc
         current_state = (self.start_loc[0],self.start_loc[1],0,0)
-        while current_loc not in terminal_locs
+        while current_loc not in terminal_locs:
             action = self.policy(current_state)
             self.episode.append((current_state,action))
             current_state = get_next_state(self.racetrack, self.current_state, action)
