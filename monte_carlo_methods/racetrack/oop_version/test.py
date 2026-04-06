@@ -35,20 +35,17 @@ state = (0,2,4,4)
 print(f"Action space for {state}: {utils.get_action_space(state)}")
 
 print("\nTEST: state space class")
-state_space = utils.StateSpace(race_track)
-print(f"State values shape: {state_space.state_values.shape}")
-print(f"State value for (0,2,0,0): {state_space.get_state_value((0,2,0,0))}")
+print(f"State values shape: {racetrack.state_values.shape}")
+print(f"State value for (1,0,0,0): {racetrack.get_state_value((1,0,0,0))}")
 
 print("\nTEST: behavior policy function")
-policy = utils.behavior_policy(state_space, epsilon=0.4)
+policy = utils.behavior_policy(racetrack, epsilon=0.4)
 print(f"Policy shape: {policy.shape}")
-print(f"Policy for (0,2,0,0): {policy[0][2][0][0]}")
+print(f"Policy for (1,0,0,0): {policy[1][0][0][0]}")
+print(f"Policy for (2,0,0,0): {policy[2][0][0][0]}")
 print(f"Policy for (0,2,4,4): {policy[0][2][4][4]}")
 
 print("\nTEST: Episode class")
-episode = utils.Episode(race_track, policy)
-episode.generate()
-print(f"Episode steps: {episode.steps}")
-print(f"Episode trajectory (first 3 steps): {episode.episode[:3]}") # print first 10 steps of episode
-print(f"Episode trajectory (last 3 steps): {episode.episode[-3:]}") # print last 3 steps of episode
+episode = utils.Episode(racetrack, policy)
+episode.generate(racetrack)
 print(episode)

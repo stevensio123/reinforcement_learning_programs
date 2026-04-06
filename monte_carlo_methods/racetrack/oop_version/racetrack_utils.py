@@ -1,6 +1,34 @@
 import numpy as np
 import random
 
+class Racetrack():
+    def __init__(self, racetrack):
+        # reverse and transpose racetrack to match coordinate system (x rows, y rows)
+        racetrack_reverse = racetrack[::-1]
+        self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
+
+        self.start_coord_list = []
+        for i in range(len(self.racetrack)):
+            for j in range(len(self.racetrack[i])):
+                if self.racetrack[i][j] == 'S':
+                    self.start_coord_list.append([i,j])
+        self.terminal_coord_list = []
+        for i in range(len(self.racetrack)):
+            for j in range(len(self.racetrack[i])):
+                if self.racetrack[i][j] == 'E':
+                    self.terminal_coord_list.append([i,j])
+        """
+        class to represent state space of racetrack.
+        state value is initialized to random integer between -5 and 1 (inclusive) for each state.
+        NEW, combined Racetrack and State_space class as these only need to be called once
+        """
+        self.state_values = np.random.randint(-5,2,size=(len(racetrack[0]),len(racetrack),5,5))
+
+    def get_state_value(self, state):
+        x, y, vx, vy = state
+        return self.state_values[x][y][vx][vy]
+
+
 def get_next_state(racetrack, state, a):
     x, y, vx, vy = state
     vx += a[0]
@@ -31,7 +59,7 @@ def get_action_space(state):
                     action_space.append([horizontal,vertical])
     return action_space
 
-def behavior_policy(obj: StateSpace, epsilon=0.1):
+def behavior_policy(obj: Racetrack, epsilon=0.1):
     """
     takes in a StateSpace object and epsilon value, 
     returns an array with the same shape as the state space,
@@ -66,7 +94,7 @@ def behavior_policy(obj: StateSpace, epsilon=0.1):
                                 # print(next_state_idx)
                                 next_state_value = state_values[next_state_idx]
                             action_values.append(next_state_value)
-                        # to break ties by taking most progressive action
+                        # to break ties by taking most progressive action, np.where returns an array
                         action_idx = np.where(action_values == np.max(action_values))[0][-1]
                         policy[x][y][vx][vy] = action_space_ls[action_idx]
                     else:
@@ -75,41 +103,7 @@ def behavior_policy(obj: StateSpace, epsilon=0.1):
                         policy[x][y][vx][vy] = action_space_ls[action_idx]
     return policy
 
-
-class Racetrack():
-    def __init__(self, racetrack):
-        # reverse and transpose racetrack to match coordinate system (x rows, y rows)
-        racetrack_reverse = racetrack[::-1]
-        self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
-
-        self.start_coord_list = []
-        for i in range(len(self.racetrack)):
-            for j in range(len(self.racetrack[i])):
-                if self.racetrack[i][j] == 'S':
-                    self.start_coord_list.append([i,j])
-        self.terminal_coord_list = []
-        for i in range(len(self.racetrack)):
-            for j in range(len(self.racetrack[i])):
-                if self.racetrack[i][j] == 'E':
-                    self.terminal_coord_list.append([i,j])
-
-class StateSpace(Racetrack):
-    """
-    class to represent state space of racetrack.
-    state value is initialized to random integer between -5 and 1 (inclusive) for each state.
-    """
-    def __init__(self, racetrack):
-        # dimensions represent:
-        # rows of race track, columns of race track, row-acceleration, col-acceleration
-        super().__init__(racetrack)
-        self.state_values = np.random.randint(-5,2,size=(len(racetrack[0]),len(racetrack),5,5))
-
-    def get_state_value(self, state):
-        x, y, vx, vy = state
-        return self.state_values[x][y][vx][vy]
-
-
-class Episode(Racetrack):
+class Episode():
     """
     inherits from Racetrack class, this is so we can access the start/terminal locs method.
     creates episode by following the policy until it reaches terminal state.
@@ -119,36 +113,40 @@ class Episode(Racetrack):
     def __init__(self, racetrack, policy):
         """
         policy: a 4D array that has an action for each state (x, y, vx, vy)
-        """
         super().__init__(racetrack)
+        """
         # start_loc: randomly chosen starting coordinate 
-        self.start_loc = self.start_coord_list[np.random.randint(len(self.start_coord_list))]
+        self.start_loc = racetrack.start_coord_list[np.random.randint(len(racetrack.start_coord_list))]
+        self.terminal_locs = racetrack.terminal_coord_list # Moved to init as useful
         self.episode = []
         self.policy = policy
         self.steps = 1
 
-    def generate(self):
+    def generate(self, racetrack):
         """
         method to create episode by following the policy until it reaches terminal state.
         """
-        terminal_locs = self.terminal_coord_list
         current_loc = self.start_loc
         current_state = (self.start_loc[0],self.start_loc[1],0,0)
-        while current_loc not in terminal_locs:
+        while current_loc not in self.terminal_locs:
             x,y,vx,vy = current_state
             action = self.policy[x][y][vx][vy]
             self.episode.append((current_state,action))
-            current_state = get_next_state(self.racetrack, current_state, action)
+            current_state = get_next_state(racetrack.racetrack, current_state, action)
             if current_state == False: 
             # if crash or out of bounds, reset to random start
-                current_loc = self.start_coord_list[np.random.randint(len(self.start_coord_list))]
+                current_loc = racetrack.start_coord_list[np.random.randint(len(racetrack.start_coord_list))]
                 current_state = (current_loc[0], current_loc[1], 0, 0)
             else:
                 current_loc = [current_state[0],current_state[1]]
             self.steps += 1
-            if self.steps > 10000000: # to prevent infinite loop in case of bad policy
+            if self.steps > 100000: # to prevent infinite loop in case of bad policy
                 print("Episode generation stopped after 10000000 steps to prevent infinite loop.")
                 print(f"Last state: {current_state}")
                 break
+
     def __str__(self):
+        print(f"Episode steps: {self.steps}")
+        print(f"Episode trajectory (first 10 steps): {self.episode[:10]}") # print first 10 steps of episode
+        print(f"Episode trajectory (last 3 steps): {self.episode[-3:]}") # print last 3 steps of episode
         return f"Total steps generated: {self.steps}"
