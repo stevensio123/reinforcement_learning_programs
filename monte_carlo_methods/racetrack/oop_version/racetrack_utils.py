@@ -3,6 +3,10 @@ import random
 
 class Racetrack():
     def __init__(self, racetrack):
+        """
+        class to represent state space of racetrack.
+        state value is initialized to random integer between -5 and 1 (inclusive) for each state.
+        """
         # reverse and transpose racetrack to match coordinate system (x rows, y rows)
         racetrack_reverse = racetrack[::-1]
         self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
@@ -15,11 +19,7 @@ class Racetrack():
                     self.terminal_coord_list.append([i,j])
                 if self.racetrack[i][j] == 'S':
                     self.start_coord_list.append([i,j])
-        """
-        class to represent state space of racetrack.
-        state value is initialized to random integer between -5 and 1 (inclusive) for each state.
-        NEW, combined Racetrack and State_space class as these only need to be called once
-        """
+        
         self.state_values = np.random.randint(-5,2,size=(len(racetrack[0]),len(racetrack),5,5))
 
     def get_state_value(self, state):
@@ -103,19 +103,18 @@ def behavior_policy(obj: Racetrack, epsilon=0.1):
 
 class Episode():
     """
-    inherits from Racetrack class, this is so we can access the start/terminal locs method.
+    Racetrack object and policy as arguments, this is so we can access the start/terminal locs method.
     creates episode by following the policy until it reaches terminal state.
-    takes in racetrack and policy as arguments.
-    episode is stored as a list of (state, action) pairs.
+    episode is stored as a list of tuples of: (state, action) pairs.
     """
-    def __init__(self, racetrack, policy):
+    def __init__(self, Racetrack, policy):
         """
         policy: a 4D array that has an action for each state (x, y, vx, vy)
         super().__init__(racetrack)
         """
         # start_loc: randomly chosen starting coordinate 
-        self.start_loc = racetrack.start_coord_list[np.random.randint(len(racetrack.start_coord_list))]
-        self.terminal_locs = racetrack.terminal_coord_list # Moved to init as useful
+        self.start_loc = Racetrack.start_coord_list[np.random.randint(len(Racetrack.start_coord_list))]
+        self.terminal_locs = Racetrack.terminal_coord_list # Moved to init as useful
         self.episode = []
         self.policy = policy
         self.steps = 1
@@ -145,6 +144,34 @@ class Episode():
 
     def __str__(self):
         print(f"Episode steps: {self.steps}")
-        print(f"Episode trajectory (first 10 steps): {self.episode[:10]}") # print first 10 steps of episode
+        print(f"Episode trajectory (first 3 steps): {self.episode[:3]}") # print first 3 steps of episode
         print(f"Episode trajectory (last 3 steps): {self.episode[-3:]}") # print last 3 steps of episode
         return f"Total steps generated: {self.steps}"
+
+
+def incremental_prediction(Racetrack, episode, cum_IS, gamma=0.9):
+    
+    episode.reverse()
+    G = 0
+    W = 1
+    for step in range(len(episode)):
+        G = (gamma*G) - 1
+        x,y,v1,v2 = episode[step][0] # state
+        a1,a2 = episode[step][1] # action
+        cum_IS[x,y,v1,v2,a1,a2] += (cum_IS[x,y,v1,v2,a1,a2] + W)
+        # find q(s,a)  
+        next_state = get_next_state(Racetrack.racetrack, (x,y,v1,v2), (a1,a2))
+        next_state_value = Racetrack.get_state_value(next_state)
+
+
+def policy_control(Racetrack, behaviour_policy, gamma=0.9):
+    # cumulative sum sampling ratio: state = 4d, action = 3d; total 7d
+    cum_IS = np.zeros((len(Racetrack.racetrack),len(Racetrack.racetrack[0]),5,5,3,3),int)
+    while True:
+        episode_count = 0
+        episode = Episode(Racetrack, behaviour_policy)
+        if episode.generate(Racetrack):
+            episode_count += 1
+            incremental_prediction(episode, cum_IS)
+        else:
+            pass
