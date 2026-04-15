@@ -1,4 +1,3 @@
-# Reinforcement Learning Programs
 ## Disclaimer
 
 This repository contains our own solutions and implementations inspired by
