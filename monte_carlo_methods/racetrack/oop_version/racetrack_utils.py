@@ -1,32 +1,6 @@
 import numpy as np
 import random
 
-class Racetrack():
-    def __init__(self, racetrack):
-        # reverse and transpose racetrack to match coordinate system (x rows, y rows)
-        racetrack_reverse = racetrack[::-1]
-        self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
-
-        self.start_coord_list = []
-        self.terminal_coord_list = []
-        for i in range(len(self.racetrack)):
-            for j in range(len(self.racetrack[i])):
-                if self.racetrack[i][j] == 'E':
-                    self.terminal_coord_list.append([i,j])
-                if self.racetrack[i][j] == 'S':
-                    self.start_coord_list.append([i,j])
-        """
-        class to represent state space of racetrack.
-        state value is initialized to random integer between -5 and 1 (inclusive) for each state.
-        NEW, combined Racetrack and State_space class as these only need to be called once
-        """
-        self.state_values = np.random.randint(-5,2,size=(len(racetrack[0]),len(racetrack),5,5))
-
-    def get_state_value(self, state):
-        x, y, vx, vy = state
-        return self.state_values[x][y][vx][vy]
-
-
 def get_next_state(racetrack, state, a):
     x, y, vx, vy = state
     vx += a[0]
@@ -56,6 +30,42 @@ def get_action_space(state):
                 if 0 <= (vy + vertical) < 5:
                     action_space.append([horizontal,vertical])
     return action_space
+
+class Racetrack():
+    def __init__(self, racetrack):
+        # reverse and transpose racetrack to match coordinate system (x rows, y rows)
+        racetrack_reverse = racetrack[::-1]
+        self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
+
+        self.start_coord_list = []
+        self.terminal_coord_list = []
+        for i in range(len(self.racetrack)):
+            for j in range(len(self.racetrack[i])):
+                if self.racetrack[i][j] == 'E':
+                    self.terminal_coord_list.append([i,j])
+                if self.racetrack[i][j] == 'S':
+                    self.start_coord_list.append([i,j])
+        """
+        class to represent state space of racetrack.
+        state value is initialized to random integer between -5 and 1 (inclusive) for each state.
+        NEW, combined Racetrack and State_space class as these only need to be called once
+        """
+        self.state_values = np.random.randint(-5,2,size=(len(racetrack[0]),len(racetrack),5,5))
+        print(self.state_values)
+
+        self.target_policy_dict = {}
+        for state in range(len(self.state_values)):
+            print(state)
+            action_space = get_action_space(state)
+            for a in action_space:
+                action_values = []
+                action_values.append(get_next_state(self.racetrack, state, a))
+            self.target_policy_dict[state] = np.max(action_values)
+
+    def get_state_value(self, state):
+        x, y, vx, vy = state
+        return self.state_values[x][y][vx][vy]
+
 
 def behavior_policy(obj: Racetrack, epsilon=0.1):
     """
@@ -103,7 +113,7 @@ def behavior_policy(obj: Racetrack, epsilon=0.1):
 
 class Episode():
     """
-    inherits from Racetrack class, this is so we can access the start/terminal locs method.
+    takes the Racetrack class as an input parameter, this is so we can access the start/terminal locs method.
     creates episode by following the policy until it reaches terminal state.
     takes in racetrack and policy as arguments.
     episode is stored as a list of (state, action) pairs.
