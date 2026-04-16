@@ -13,6 +13,7 @@ print(f"racetrack list (cartesian):{racetrack.racetrack}")
 print(f"start locations: {racetrack.start_coord_list}")
 print(f"terminal locations: {racetrack.terminal_coord_list}")
 print(f"racetrack[7][3]: {racetrack.racetrack[7][3]}")
+print(f"policy[7][3]: {racetrack.target_policy_dict[7][3]}")
 
 
 print("\nTEST: next_state function")

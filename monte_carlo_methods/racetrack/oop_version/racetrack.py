@@ -1,9 +1,7 @@
 import numpy as np
 import racetrack_utils as utils
 
-gamma = 0.9
-
-def incremental_prediction(Racetrack, episode, cum_IS):
+def incremental_prediction(Racetrack, episode, cum_IS, gamma = 0.9):
   
   episode.reverse()
   G = 0
@@ -12,10 +10,14 @@ def incremental_prediction(Racetrack, episode, cum_IS):
     G = (gamma*G) - 1
     y,x,v1,v2 = episode[step][0] # state
     a1,a2 = episode[step][1] # action
-    cum_IS[y,x,v1,v2,a1,a2] += (cum_IS[y,x,v1,v2,a1,a2] + W)
-    # find q(s,a) of 
-    next_state = utils.get_next_state(Racetrack.racetrack, s, a)
-    state_value = Racetrack.get_state_value(next_state)
+    cum_IS[y,x,v1,v2,a1,a2] += W
+
+    # find v(s) of next state and get action value
+    next_state = utils.get_next_state(Racetrack.racetrack, episode[step][0], episode[step][1])
+    action_value = -1 + Racetrack.get_state_value(next_state)
+
+    # update q(s,a)
+    Racetrack.get_state_value(episode[step][0]) += ((W / (cum_IS[y,x,v1,v2,a1,a2])) (G - Racetrack.get_state_value(episode[step][0])))
 
 
 def policy_control(Racetrack, behaviour_policy):
