@@ -24,7 +24,9 @@ class Racetrack():
 
     def get_state_value(self, state):
         x, y, vx, vy = state
-        return self.state_values[x][y][vx][vy]
+        return self.state_values[x,y,vx,vy]
+        # equivalent to:
+        # return self.state_values[x][y][vx][vy]
 
 
 def get_next_state(racetrack, state, a):
@@ -57,7 +59,29 @@ def get_action_space(state):
                     action_space.append([horizontal,vertical])
     return action_space
 
-def behavior_policy(obj: Racetrack, epsilon=0.1):
+def get_optimal_action(state, Racetrack, action_space_ls):
+    racetrack = Racetrack.racetrack
+    state_values = Racetrack.state_values
+    start_locs = Racetrack.start_coord_list
+    # choose optimal / random action:
+    # take optimal action according to current state values
+    action_values = []
+    for action in action_space_ls:
+        next_state_idx = get_next_state(racetrack, state, action)
+        if next_state_idx == False:
+            # get value of random starting state if crash or out of bounds
+            start_loc = start_locs[np.random.randint(len(start_locs))]
+            next_state_idx = (start_loc[0], start_loc[1], 0, 0)   
+            next_state_value = state_values[next_state_idx]
+        else:
+            # print(next_state_idx)
+            next_state_value = state_values[next_state_idx]
+        action_values.append(next_state_value)
+    # to break ties by taking most progressive action, np.where returns an array
+    action_idx = np.where(action_values == np.max(action_values))[0][-1]
+    return action_idx
+
+def get_policy(obj: Racetrack, epsilon=0.1):
     """
     takes in a StateSpace object and epsilon value, 
     returns an array with the same shape as the state space,
@@ -74,26 +98,9 @@ def behavior_policy(obj: Racetrack, epsilon=0.1):
         for y in range(state_values.shape[1]):
             for vx in range(state_values.shape[2]):
                 for vy in range(state_values.shape[3]):
-                    state = (x,y,vx,vy)
-                    # choose optimal / random action:
-                    action_space_ls = get_action_space(state)
-                    if random.random() > epsilon:
-                        # take optimal action according to current state values
-                        action_values = []
-                        for action in action_space_ls:
-                            next_state_idx = get_next_state(racetrack, state, action)
-                            if next_state_idx == False:
-                                # get value of random starting state if crash or out of bounds
-                                start_loc = start_locs[np.random.randint(len(start_locs))]
-                                next_state_idx = (start_loc[0], start_loc[1], 0, 0)   
-
-                                next_state_value = state_values[next_state_idx]
-                            else:
-                                # print(next_state_idx)
-                                next_state_value = state_values[next_state_idx]
-                            action_values.append(next_state_value)
-                        # to break ties by taking most progressive action, np.where returns an array
-                        action_idx = np.where(action_values == np.max(action_values))[0][-1]
+                    action_space_ls = get_action_space((x,y,vx,vy))
+                    if np.random.random() < epsilon:
+                        action_idx = get_optimal_action((x,y,vx,vy), obj, action_space_ls)
                         policy[x][y][vx][vy] = action_space_ls[action_idx]
                     else:
                         # take random action
@@ -119,7 +126,7 @@ class Episode():
         self.policy = policy
         self.steps = 1
 
-    def generate(self, Racetrack):
+    def generate(self, Racetrack, max_steps=100000):
         """
         method to create episode by following the policy until it reaches terminal state.
         """
@@ -148,30 +155,3 @@ class Episode():
         print(f"Episode trajectory (last 3 steps): {self.episode[-3:]}") # print last 3 steps of episode
         return f"Total steps generated: {self.steps}"
 
-
-def incremental_prediction(Racetrack, episode, cum_IS, gamma=0.9):
-    
-    episode.reverse()
-    G = 0
-    W = 1
-    for step in range(len(episode)):
-        G = (gamma*G) - 1
-        x,y,v1,v2 = episode[step][0] # state
-        a1,a2 = episode[step][1] # action
-        cum_IS[x,y,v1,v2,a1,a2] += (cum_IS[x,y,v1,v2,a1,a2] + W)
-        # find q(s,a)  
-        next_state = get_next_state(Racetrack.racetrack, (x,y,v1,v2), (a1,a2))
-        next_state_value = Racetrack.get_state_value(next_state)
-
-
-def policy_control(Racetrack, behaviour_policy, gamma=0.9):
-    # cumulative sum sampling ratio: state = 4d, action = 3d; total 7d
-    cum_IS = np.zeros((len(Racetrack.racetrack),len(Racetrack.racetrack[0]),5,5,3,3),int)
-    while True:
-        episode_count = 0
-        episode = Episode(Racetrack, behaviour_policy)
-        if episode.generate(Racetrack):
-            episode_count += 1
-            incremental_prediction(episode, cum_IS)
-        else:
-            pass
