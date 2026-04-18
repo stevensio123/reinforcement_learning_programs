@@ -1,5 +1,6 @@
 import racetrack_utils as utils
 import numpy as np
+np.random.seed(0)
 race_track = ["####EEEE",
               "#NNNNNNE",
               "#NNNNNNE",
@@ -13,6 +14,8 @@ print(f"racetrack list (cartesian):{racetrack.racetrack}")
 print(f"start locations: {racetrack.start_coord_list}")
 print(f"terminal locations: {racetrack.terminal_coord_list}")
 print(f"racetrack[7][3]: {racetrack.racetrack[7][3]}")
+print(f"State values shape: {racetrack.state_values.shape}")
+print(f"State value for (1,0,0,0): {racetrack.get_state_value((1,0,0,0))}")
 
 
 print("\nTEST: next_state function")
@@ -33,10 +36,6 @@ state = (0,2,0,0)
 print(f"Action space for {state}: {utils.get_action_space(state)}")
 state = (0,2,4,4)
 print(f"Action space for {state}: {utils.get_action_space(state)}")
-
-print("\nTEST: state space class")
-print(f"State values shape: {racetrack.state_values.shape}")
-print(f"State value for (1,0,0,0): {racetrack.get_state_value((1,0,0,0))}")
 
 print("\nTEST: behavior policy function")
 policy = utils.behavior_policy(racetrack, epsilon=0.4)
