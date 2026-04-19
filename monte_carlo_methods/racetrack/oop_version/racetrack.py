@@ -29,7 +29,7 @@ def off_policy_control(Racetrack, gamma=0.9, epsilon=0.1, max_episode_count=1000
     ep_generation_attempts = 0
     while True:        
         episode = utils.Episode(Racetrack, behaviour_policy)
-        if episode.generate(Racetrack, max_steps=100000):
+        if episode.generate(Racetrack, max_steps=max_steps):
             episode_count += 1
             incremental_prediction(episode, cum_IS, gamma, epsilon)
             if episode_count > max_episode_count:
@@ -52,6 +52,7 @@ def off_policy_control(Racetrack, gamma=0.9, epsilon=0.1, max_episode_count=1000
             pass
 
 def main():
+    np.random.seed(42)
     race_track = ["####EEEE",
                 "#NNNNNNE",
                 "#NNNNNNE",
@@ -73,7 +74,7 @@ def main():
                    gamma=gamma,
                    epsilon=0.1, 
                    max_episode_count=max_episode_count,
-                   max_steps=100000,
+                   max_steps=1000000,
                    max_episode_generation_attempts=10)
     
 
