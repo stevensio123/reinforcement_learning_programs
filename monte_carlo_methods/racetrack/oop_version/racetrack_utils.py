@@ -144,7 +144,7 @@ class Episode():
             else:
                 current_loc = [current_state[0],current_state[1]]
             self.steps += 1
-            if self.steps > 100000: # to prevent infinite loop in case of bad policy
+            if self.steps > max_steps: # to prevent infinite loop in case of bad policy
                 print("Episode generation stopped after 10000000 steps to prevent infinite loop.")
                 print(f"Last state: {current_state}")
                 return False
