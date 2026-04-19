@@ -21,24 +21,35 @@ def incremental_prediction(Racetrack, episode, cum_IS, gamma=0.9, epsilon=0.1):
             break
         W = W / ((1- epsilon) + (epsilon / len(action_space_ls)))
 
-def off_policy_control(Racetrack, gamma=0.9, epsilon=0.1, max_episode_count=1000, max_steps=100000):
+def off_policy_control(Racetrack, gamma=0.9, epsilon=0.1, max_episode_count=1000, max_steps=100000, max_episode_generation_attempts=100):
     # cumulative sum sampling ratio: state = 4d, action = 3d; total 7d
     cum_IS = np.zeros((len(Racetrack.racetrack),len(Racetrack.racetrack[0]),5,5,3,3),int)
     episode_count = 0    
     behaviour_policy = utils.get_policy(Racetrack, epsilon=epsilon)
+    ep_generation_attempts = 0
     while True:        
         episode = utils.Episode(Racetrack, behaviour_policy)
         if episode.generate(Racetrack, max_steps=100000):
             episode_count += 1
             incremental_prediction(episode, cum_IS, gamma, epsilon)
             if episode_count > max_episode_count:
-                behaviour_policy = utils.get_policy(Racetrack, epsilon=epsilon)
+                print(f"Off-policy control complete after {episode_count} episodes")
                 break
             print(f"Episode {episode_count} complete")
         else:
+            ep_generation_attempts += 1
             print(f'Episode generation reached maximum steps ({max_steps}), retrying...')
-            break
-
+            print(f"Episode generation attempts: {ep_generation_attempts}")
+            if ep_generation_attempts > max_episode_generation_attempts:
+                if epsilon < 1: # or <= 0.99
+                    epsilon += 0.01
+                    print(f"Episode generation failed after {ep_generation_attempts} attempts, increased epsilon by 0.01./n New epsilon: {epsilon:.2f}")
+                else:
+                    print(f"Episode generation failed after {ep_generation_attempts} attempts, epsilon is already at maximum value of 1. Stopping off-policy control.")
+                    break
+                ep_generation_attempts = 0
+            behaviour_policy = utils.get_policy(Racetrack, epsilon=epsilon)
+            pass
 
 def main():
     race_track = ["####EEEE",
@@ -62,7 +73,8 @@ def main():
                    gamma=gamma,
                    epsilon=0.1, 
                    max_episode_count=max_episode_count,
-                   max_steps=100000)
+                   max_steps=100000,
+                   max_episode_generation_attempts=10)
     
 
 main()
