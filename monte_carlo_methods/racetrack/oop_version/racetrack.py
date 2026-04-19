@@ -32,7 +32,7 @@ def off_policy_control(Racetrack, gamma=0.9, epsilon=0.1, max_episode_count=1000
         if episode.generate(Racetrack, max_steps=max_steps):
             episode_count += 1
             incremental_prediction(episode, cum_IS, gamma, epsilon)
-            if episode_count > max_episode_count:
+            if episode_count == max_episode_count:
                 print(f"Off-policy control complete after {episode_count} episodes")
                 break
             print(f"Episode {episode_count} complete")
@@ -53,12 +53,12 @@ def off_policy_control(Racetrack, gamma=0.9, epsilon=0.1, max_episode_count=1000
 
 def main():
     np.random.seed(42)
-    race_track = ["####EEEE",
-                "#NNNNNNE",
-                "#NNNNNNE",
-                "#NNNNNNE",
-                "#NNNNN##",
-                "#SSSSS##"]
+    race_track =   ["#EEEEEEE",
+                    "#NNNNNNE",
+                    "#NNNNNNE",
+                    "#NNNNNNE",
+                    "#NNNNN##",
+                    "#SSSSS##"]
     '''
     race_track = ["########",
                 "#NNNNNNE",
@@ -74,7 +74,7 @@ def main():
                    gamma=gamma,
                    epsilon=0.1, 
                    max_episode_count=max_episode_count,
-                   max_steps=1000000,
+                   max_steps=10000000,
                    max_episode_generation_attempts=10)
     
 

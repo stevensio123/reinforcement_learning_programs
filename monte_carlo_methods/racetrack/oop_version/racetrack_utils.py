@@ -91,7 +91,6 @@ def get_policy(obj: Racetrack, epsilon=0.1):
     racetrack = obj.racetrack
     start_locs = obj.start_coord_list
 
-    #print(start_locs)
     # use object array to store lists as elements (because there are two actions)
     policy = np.empty(state_values.shape, dtype=object) 
     for x in range(state_values.shape[0]):
@@ -100,6 +99,7 @@ def get_policy(obj: Racetrack, epsilon=0.1):
                 for vy in range(state_values.shape[3]):
                     action_space_ls = get_action_space((x,y,vx,vy))
                     if np.random.random() < epsilon:
+                        # take optimal action
                         action_idx = get_optimal_action((x,y,vx,vy), obj, action_space_ls)
                         policy[x][y][vx][vy] = action_space_ls[action_idx]
                     else:
