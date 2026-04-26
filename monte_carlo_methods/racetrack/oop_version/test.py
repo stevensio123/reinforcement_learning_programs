@@ -19,11 +19,11 @@ print(f"policy[7][3][1][2]: {racetrack.target_policy_dict[7][3][1][2]}")
 print("\nTEST: next_state function")
 state = (0,2,0,0)
 # state = (0,7,0,0) # out of bounds
-action = [3,3]
+action = [1,1]
 print(f"Current state: {state}")
 print(f"Action taken: {action}")
 try:
-    x, y , vx, vy = utils.get_next_state(racetrack.racetrack, state, action)
+    x, y , vx, vy = utils.get_next_state(racetrack, state, action)
     print(f"Next state: ({x}, {y}, {vx}, {vy})")
 except TypeError:
     print("Crashed or out of bounds")
@@ -40,7 +40,7 @@ print(f"State values shape: {racetrack.state_values.shape}")
 print(f"State value for (1,0,0,0): {racetrack.get_state_value((1,0,0,0))}")
 
 print("\nTEST: behavior policy function")
-policy = utils.behavior_policy(racetrack, epsilon=0.4)
+policy = utils.get_policy(racetrack, epsilon=0.4)
 print(f"Policy shape: {policy.shape}")
 print(f"Policy for (1,0,0,0): {policy[1][0][0][0]}")
 print(f"Policy for (2,0,0,0): {policy[2][0][0][0]}")
