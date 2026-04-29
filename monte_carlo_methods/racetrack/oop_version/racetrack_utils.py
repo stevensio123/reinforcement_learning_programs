@@ -14,9 +14,9 @@ class Racetrack():
         for i in range(len(self.racetrack)):
             for j in range(len(self.racetrack[i])):
                 if self.racetrack[i][j] == 'E':
-                    self.terminal_coord_list.append([i,j])
+                    self.terminal_coord_list.append((i,j))
                 if self.racetrack[i][j] == 'S':
-                    self.start_coord_list.append([i,j])
+                    self.start_coord_list.append((i,j))
         """
         class to represent state space of racetrack.
         state value is initialized to random integer between -5 and 1 (inclusive) for each state.
@@ -97,7 +97,6 @@ def get_policy(obj: Racetrack, epsilon=0.1):
                         # take random action
                         action_idx = np.random.randint(len(action_space_ls))
                         policy[x][y][vx][vy] = action_space_ls[action_idx]
-    print(f"policy at [1][0][0][0]: {policy[1][0][0][0]}")
     return policy
 
 def get_optimal_action(Racetrack, state, action_space_ls):
@@ -129,7 +128,6 @@ class Episode():
         super().__init__(racetrack)
         """
         # start_loc: randomly chosen starting coordinate 
-        self.start_loc = racetrack.start_coord_list[np.random.randint(len(racetrack.start_coord_list))]
         self.terminal_locs = racetrack.terminal_coord_list # Moved to init as useful
         self.episode = []
         self.policy = policy
@@ -138,8 +136,8 @@ class Episode():
         """
         method to create episode by following the policy until it reaches terminal state.
         """
-        current_loc = self.start_loc
-        current_state = (self.start_loc[0],self.start_loc[1],0,0)
+        current_loc = Racetrack.start_coord_list[np.random.randint(len(Racetrack.start_coord_list))]
+        current_state = (current_loc[0],current_loc[1],0,0)
         self.steps = 0
         
         while True:
@@ -148,17 +146,17 @@ class Episode():
             next_state = get_next_state(Racetrack, current_state, action)
             if current_loc in Racetrack.terminal_coord_list:
                 break
-            current_loc = [next_state[0],next_state[1]]
+            current_loc = (next_state[0],next_state[1])
             self.steps += 1
             self.episode.append((current_state,action))
             current_state = next_state
             # print(f"No crash at step {self.steps} at {current_state} with {action}")
             if self.steps > max_steps: # to prevent infinite loop in case of bad policy
                 print("Episode generation stopped after 10000000 steps to prevent infinite loop.")
-                print(f"Last state: {current_state}")
+                print(f"    Last state: {current_state}")
                 return False
         print("Episode generated")
-        print(f"Steps taken: {self.steps}")
+        print(f"    Steps taken: {self.steps}")
         return True
 
     def __str__(self):

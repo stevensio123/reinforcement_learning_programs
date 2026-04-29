@@ -1,11 +1,32 @@
 import racetrack_utils as utils
 import numpy as np
+from matplotlib.path import Path
+import matplotlib.pyplot as plt
+
 race_track = ["####EEEE",
               "#NNNNNNE",
               "#NNNNNNE",
               "#NNNNNNE",
               "#NNNNN##",
               "#SSSSS##"]
+
+verts = [(2,4), (3,3), (4,2), (7,1)]
+
+codes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO]
+
+def build_track(og_racetrack):
+    racetrack = np.array([list(row) for row in og_racetrack])
+    track = np.ones(shape=(len(racetrack),len(racetrack[0])))
+    for row in range(len(racetrack)):
+        for column in range(len(racetrack[row])):
+            if racetrack[row][column] == "#":
+                track[row][column] = 0
+            elif racetrack[row][column] == "E":
+                track[row][column] = 0.4
+            elif racetrack[row][column] == "S":
+                track[row][column] = 0.6
+    
+    return track
 
 print("\nTEST: racetrack object")
 racetrack = utils.Racetrack(race_track)
@@ -50,3 +71,19 @@ print("\nTEST: Episode class")
 episode = utils.Episode(racetrack, policy)
 episode.generate(racetrack)
 print(episode)
+
+
+successful_ep_counter = [ 0 for _ in range(len(racetrack.start_coord_list))]
+print(successful_ep_counter)
+print(racetrack.start_coord_list)
+successful_epi_dict = dict(zip(racetrack.start_coord_list, successful_ep_counter))
+print(successful_epi_dict)
+
+track = build_track(race_track)
+path = Path(verts, codes)
+patch = patches.PathPatch(path, facecolor="none", lw=2)
+plt.figure(figsize=(10, 10))
+plt.imshow(track)
+plt.gca().add_patch(patch)
+plt.title("Racetrack")
+plt.show()
