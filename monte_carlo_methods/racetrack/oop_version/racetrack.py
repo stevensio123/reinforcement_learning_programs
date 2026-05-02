@@ -36,7 +36,7 @@ def incremental_prediction(Racetrack, episode, cum_IS, epsilon, gamma = 0.9):
     W = W / ((1- epsilon) + (epsilon / len(action_space_ls)))
 
 
-def off_policy_control(Racetrack, epsilon = 0.1, max_episode_count=10000, min_successful_episode = 3, max_episode_generation_attempt = 10):
+def off_policy_control(Racetrack, epsilon = 0.1, max_episode_count=1000, min_successful_episode = 3, max_episode_generation_attempt = 10):
   # cumulative sum sampling ratio: state = 4d, action = 3d; total 7d
   cum_IS = np.zeros((len(Racetrack.racetrack),len(Racetrack.racetrack[0]),5,5,3,3),int)
   behaviour_policy = utils.get_policy(Racetrack, epsilon)
@@ -72,8 +72,6 @@ def off_policy_control(Racetrack, epsilon = 0.1, max_episode_count=10000, min_su
       behaviour_policy = utils.get_policy(Racetrack, epsilon)
   
   print("Off-policy completed.")
-
-
 
 
 def main():

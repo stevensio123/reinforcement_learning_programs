@@ -2,6 +2,7 @@ import racetrack_utils as utils
 import numpy as np
 from matplotlib.path import Path
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 race_track = ["####EEEE",
               "#NNNNNNE",
