@@ -37,6 +37,7 @@ How to check branches.
     1. `git checkout <branch name>` is similar to git switch
 3. `git checkout -b <branch name>` to create a new branch within your local repo, after you will need to set the upstream of this new branch to origin/<remote branch name>
     1. You will then need to 'git pull' to update the branch to the newest commit of that branch
+    2. To set upstream of local branch, use `git branch --set-upstream-to=origin/<remote branch name> <local branch name>
 4. Run `git branch -a`  to see all branches (including hidden ones like remote branches)
 
 
