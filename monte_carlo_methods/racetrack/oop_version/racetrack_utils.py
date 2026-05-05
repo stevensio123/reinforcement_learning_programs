@@ -1,5 +1,17 @@
 import numpy as np
 import random
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    "%(asctime)s | %(levelname)s | %(message)s",
+)
+
+file_handler = logging.FileHandler("utils.log")
+file_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
 
 
 class Racetrack:
@@ -8,6 +20,7 @@ class Racetrack:
         class to represent state space of racetrack.
         state value is initialized to random integer between -5 and 1 (inclusive) for each state.
         """
+        logger.info("creating racetrack with input: {}".format(racetrack))
         # reverse and transpose racetrack to match coordinate system (x rows, y rows)
         racetrack_reverse = racetrack[::-1]
         self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
@@ -24,11 +37,7 @@ class Racetrack:
                     self.terminal_coord_list.append((i, j))
                 if self.racetrack[i][j] == "S":
                     self.start_coord_list.append((i, j))
-        """
-        class to represent state space of racetrack.
-        state value is initialized to random integer between -5 and 1 (inclusive) for each state.
-        NEW, combined Racetrack and State_space class as these only need to be called once
-        """
+
         self.x_terminal_loc = self.terminal_coord_list[0][0]
         self.y_terminal_locs = []
         for coord in self.terminal_coord_list:
@@ -39,6 +48,7 @@ class Racetrack:
         self.target_policy_dict = np.empty(self.state_values.shape, dtype=object)
 
     def get_state_value(self, state):
+        logger.info("getting state value of state: {}".format(state))
         x, y, vx, vy = state
         return self.state_values[x, y, vx, vy]
         # equivalent to:
@@ -46,6 +56,7 @@ class Racetrack:
 
 
 def get_next_state(Racetrack, state, a):
+    logger.info("getting next state of {}".format(state))
     x, y, vx, vy = state
     vx += a[0]
     vy += a[1]
@@ -56,7 +67,9 @@ def get_next_state(Racetrack, state, a):
         y = Racetrack.y_terminal_smallest_loc
     try:
         Racetrack.racetrack[x][y]
+        logger.info("next state is {}".format(Racetrack.racetrack[x][y]))
     except IndexError:  # out of bounds
+        logger.debug("next state is out of bounds.")
         new_coord = Racetrack.start_coord_list[
             np.random.randint(len(Racetrack.start_coord_list))
         ]
