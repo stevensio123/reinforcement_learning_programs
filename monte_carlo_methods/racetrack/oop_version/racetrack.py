@@ -1,7 +1,6 @@
 import numpy as np
 import racetrack_utils as utils
 
-
 def incremental_prediction(Racetrack, episode, cum_IS, epsilon, gamma=0.9):
 
     episode.reverse()
@@ -121,7 +120,11 @@ def off_policy_control(
 
 
 def main():
-    race_track = ["#######E", "#NNNNNNE", "#NNNNNNE", "#NNNNNNE", "#SS#####"]
+    race_track = ["#######E", 
+                  "#NNNNNNE", 
+                  "#NNNNNNE", 
+                  "#NNNNNNE", 
+                  "#SS#####"]
 
     epsilon = 0.1
     gamma = 0.9
@@ -139,4 +142,3 @@ def main():
 
 
 main()
-
