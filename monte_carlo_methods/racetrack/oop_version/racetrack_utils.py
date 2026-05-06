@@ -153,22 +153,28 @@ class Episode:
         self.episode = []
         self.policy = policy
 
-    def generate(self, Racetrack, max_steps=100000):
+    def generate(self, Racetrack, max_steps=100000, start_pos=None):
         """
         method to create episode by following the policy until it reaches terminal state.
         """
-        current_loc = Racetrack.start_coord_list[
-            np.random.randint(len(Racetrack.start_coord_list))
-        ]
+        if start_pos == None:
+            current_loc = Racetrack.start_coord_list[
+                np.random.randint(len(Racetrack.start_coord_list))
+            ]
+        else:
+            current_loc = start_pos
         current_state = (current_loc[0], current_loc[1], 0, 0)
         self.steps = 0
 
         while True:
             x, y, vx, vy = current_state
             action = self.policy[x][y][vx][vy]
-            next_state = get_next_state(Racetrack, current_state, action)
             if current_loc in Racetrack.terminal_coord_list:
                 break
+            elif action == None:
+                self.episode.append((current_state, [0,0]))
+                break
+            next_state = get_next_state(Racetrack, current_state, action)
             current_loc = (next_state[0], next_state[1])
             self.steps += 1
             self.episode.append((current_state, action))
