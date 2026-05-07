@@ -2,7 +2,7 @@ import numpy as np
 import random
 import logging
 
-logger = logging.getlogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class Racetrack:
