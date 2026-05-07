@@ -2,15 +2,38 @@ import numpy as np
 import racetrack_utils as utils
 import logging
 
-logger = logging.getlogger(__name__)
-logger.setlevel(logging.DEBUG)
-
-formatter = logging.Formatter("%(asctime)s | %(name)s - %(levelname)s | %(message)s")
-handler = logging.FileHandler(
-    "racetrack.log", mode="w"
-)  # writes / replaces original file
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+formatter = logging.Formatter()
+logging.config.dictConfig(
+    {
+        "version": 1,
+        "formatters": {
+            "standard": {
+                "format": "%(asctime)s | %(name)s - %(levelname)s | %(message)s"
+            }
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "standard",
+                "level": "INFO",
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": "racetrack.log",
+                "formatter": "standard",
+            },
+        },
+        "root": {
+            "level": "DEBUG",
+            "handlers": ["console", "file"],  # logs to both console and file
+        },
+        # this part only needed if want to customize logger in utils
+        # "loggers": {    #   utils.__name__: {
+        #       "level": "DEBUG"
+        #   }
+        # }
+    }
+)
 
 
 def incremental_prediction(racetrack, episode, cum_is, epsilon, gamma=0.9):
