@@ -5,22 +5,21 @@ import logging
 logger = logging.getlogger(__name__)
 logger.setlevel(logging.DEBUG)
 
-# set file handlers for each level
-debug_handler = utils.set_file_handler("debug.log", logging.DEBUG)
-info_handler = utils.set_file_handler("info.log", logging.INFO)
-warn_handler = utils.set_file_handler("warning.log", logging.WARNING)
-error_handler = utils.set_file_handler("error.log", logging.ERROR)
-logger.addhandler(debug_handler)
-logger.addhandler(info_handler)
-logger.addhandler(warn_handler)
-logger.addhandler(error_handler)
+formatter = logging.Formatter("%(asctime)s | %(name)s - %(levelname)s | %(message)s")
+handler = logging.FileHandler(
+    "racetrack.log", mode="w"
+)  # writes / replaces original file
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 def incremental_prediction(racetrack, episode, cum_is, epsilon, gamma=0.9):
     """
     racetrack : Racetrack class from utils.
-    episode : Episode class from utils, expects episode to be generated.
-
+    episode : Episode class from utils, expects episode to be already generated.
+    cum_is : the current cumulative importance sampling ratio in the policy control iteration.
+    epsilon : used to compute b(A|S), the probability of action given state in the behaviour policy.
+    gamma : the weight parameter used on the rewards.
     """
     episode.reverse()
     g = 0
