@@ -3,7 +3,6 @@ import random
 import logging
 
 logger = logging.getlogger(__name__)
-logger.setlevel(logging.DEBUG)
 
 
 class Racetrack:
