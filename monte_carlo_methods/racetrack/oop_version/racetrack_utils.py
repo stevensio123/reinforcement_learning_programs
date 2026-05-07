@@ -2,16 +2,21 @@ import numpy as np
 import random
 import logging
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-formatter = logging.Formatter(
-    "%(asctime)s | %(levelname)s | %(message)s",
-)
+logger = logging.getlogger(__name__)
+logger.setlevel(logging.DEBUG)
 
-file_handler = logging.FileHandler("utils.log")
-file_handler.setFormatter(formatter)
 
-logger.addHandler(file_handler)
+def set_file_handler(log_file, level):
+    """
+    create a file handler for specific levels under one format.
+    """
+    handler = logging.FileHandler(log_file, mode="w")  # replaces the file on each run
+    handler.setLevel(level)
+    formatter = logging.Formatter(
+        "%(asctime)s | %(name)s - %(levelname)s | %(message)s"
+    )
+    handler.setFormatter(formatter)
+    return handler
 
 
 class Racetrack:
@@ -48,7 +53,7 @@ class Racetrack:
         self.target_policy_dict = np.empty(self.state_values.shape, dtype=object)
 
     def get_state_value(self, state):
-        logger.info("getting state value of state: {}".format(state))
+        logger.debug("getting state value of state: {}".format(state))
         x, y, vx, vy = state
         return self.state_values[x, y, vx, vy]
         # equivalent to:
@@ -56,7 +61,7 @@ class Racetrack:
 
 
 def get_next_state(Racetrack, state, a):
-    logger.info("getting next state of {}".format(state))
+    logger.debug("getting next state of {}".format(state))
     x, y, vx, vy = state
     vx += a[0]
     vy += a[1]
@@ -67,7 +72,7 @@ def get_next_state(Racetrack, state, a):
         y = Racetrack.y_terminal_smallest_loc
     try:
         Racetrack.racetrack[x][y]
-        logger.info("next state is {}".format(Racetrack.racetrack[x][y]))
+        logger.debug("next state is {}".format(Racetrack.racetrack[x][y]))
     except IndexError:  # out of bounds
         logger.debug("next state is out of bounds.")
         new_coord = Racetrack.start_coord_list[
