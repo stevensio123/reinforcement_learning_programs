@@ -6,19 +6,6 @@ logger = logging.getlogger(__name__)
 logger.setlevel(logging.DEBUG)
 
 
-def set_file_handler(log_file, level):
-    """
-    create a file handler for specific levels under one format.
-    """
-    handler = logging.FileHandler(log_file, mode="w")  # replaces the file on each run
-    handler.setLevel(level)
-    formatter = logging.Formatter(
-        "%(asctime)s | %(name)s - %(levelname)s | %(message)s"
-    )
-    handler.setFormatter(formatter)
-    return handler
-
-
 class Racetrack:
     def __init__(self, racetrack):
         """
