@@ -40,13 +40,15 @@ How to check branches.
     2. To set upstream of local branch, use `git branch --set-upstream-to=origin/<remote branch name> <local branch name>
 4. Run `git branch -a`  to see all branches (including hidden ones like remote branches)
 
+# Checking logs and historic changes:
+1. To check logs of changes committed, use `git log`.
+    1. If you want more information on a log change, copy the ID and add to `git show <id>` to see changes made
+2. `git diff <branch/id 1> <branch/id 2>` can be used to check differences between branches or commit logs, leave variables blank (<>) to check difference between stage repository and currently edited repository.
+    1. Press q to exit the log page
 
 ## Notes:
 1. To check your working environment, use `which python` to check.
 2. Check `git --help` if confused.
-3. To check logs of changes committed, use `git log`.
-    1. If you want more information on a log change, copy the ID and add to `git show <id>` to see changes made
-4. `git diff <branch/id 1> <branch/id 2>` can be used to check differences between branches or commit logs, leave variables blank (<>) to check difference between stage repository and currently edited repository.
 
 # Naming Conventions
 Follow PEP 8 style guide:

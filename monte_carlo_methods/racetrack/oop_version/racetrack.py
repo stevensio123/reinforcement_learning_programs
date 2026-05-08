@@ -5,7 +5,7 @@ import os
 import shutil
 import matplotlib.pyplot as plt
 
-def incremental_prediction(Racetrack, episode, cum_IS, epsilon, gamma=0.9):
+def incremental_prediction(Racetrack, episode, cum_IS, epsilon, gamma=1):
 
     episode.reverse()
     G = 0
@@ -24,10 +24,10 @@ def incremental_prediction(Racetrack, episode, cum_IS, epsilon, gamma=0.9):
 
         # update q(s,a)
         next_state = utils.get_next_state(Racetrack, episode[step][0], episode[step][1])
-        Racetrack.state_values[x][y][v1][v2] = Racetrack.get_state_value(next_state) + (
-            (W / (cum_IS[x, y, v1, v2, a1, a2]))
-            * (G - Racetrack.get_state_value(next_state))
-        )
+        Racetrack.state_values[x][y][v1][v2] = round(Racetrack.get_state_value(next_state) 
+            + ( (W / (cum_IS[x, y, v1, v2, a1, a2]))
+            * (G - Racetrack.get_state_value(next_state)) # i think old is wrong following pseudo code (should be updating next state not current state value)
+        ), 3) # NEW added rounding to 3 d.p for more accurate rounding
 
         # update target policy action based on best value of actions
         action_space_ls = utils.get_action_space(
@@ -57,7 +57,7 @@ def off_policy_control(
     max_episode_count=10000,
     min_successful_episode=3,
     max_episode_generation_attempt=10,
-    gamma=0.9,
+    gamma=1,
 ):
     """
     max_episode_count: determines the maximum amount of successful episodes needed to be generated.
@@ -68,6 +68,7 @@ def off_policy_control(
     cum_IS = np.zeros(
         (len(Racetrack.racetrack), len(Racetrack.racetrack[0]), 5, 5, 3, 3), int
     )
+    success = True
     behaviour_policy = utils.get_policy(Racetrack, epsilon)
     episode_count = 0
     ep_generation_attempt = 0
@@ -91,18 +92,20 @@ def off_policy_control(
             successful_epi_dict[
                 (episode.episode[-1][0][0], episode.episode[-1][0][1])
             ] += 1
-            if (min(successful_epi_dict.values()) >= min_successful_episode) and (
-                episode_count >= max_episode_count
-            ):
+            print("Added one success attempt.")
+            if min_successful_episode <= min(successful_epi_dict.values()) and episode_count >= max_episode_count:
                 print(
                     "Off-policy control achieved minimum successful episodes for each starting location, ending run..."
                 )
-                break
+                print("Off-policy completed.")
+                return success
             print(
-                f"Off-policy control successful at episode {episode_count}, continuing..."
+                f"Off-policy control successful at episode {episode_count}, continuing... \n Smallest success value: {min(successful_epi_dict.values())}"
             )
+            behaviour_policy = utils.get_policy(Racetrack, epsilon)
+            ep_generation_attempt = 0
         else:
-            ep_generation_attempt += 1  # general attempt counter
+            """ep_generation_attempt += 1  # general attempt counter
             print(
                 f"Episode generation reached max step, generation attempt {ep_generation_attempt} failed..."
             )
@@ -116,11 +119,11 @@ def off_policy_control(
                     print(
                         "Epsilon value at maximum of 0.99, stopping off-policy control."
                     )
+                    success = False
                     break
-                ep_generation_attempt = 0
+                ep_generation_attempt = 0"""
             behaviour_policy = utils.get_policy(Racetrack, epsilon)
 
-    print("Off-policy completed.")
 
 def build_track(og_racetrack):
     racetrack = np.array([list(row) for row in og_racetrack])
@@ -169,19 +172,22 @@ def main():
 
     epsilon = 0.1
     gamma = 0.9
-    max_episode_count = 1000
-    max_episode_generation_attempt = 4
+    max_episode_count = 100
+    max_episode_generation_attempt = 100000
     race_track_obj = utils.Racetrack(race_track)
 
-    off_policy_control(
+    MC_control_result = off_policy_control(
         race_track_obj,
-        epsilon,
-        max_episode_count,
-        max_episode_generation_attempt,
-        gamma,
+        epsilon=epsilon,
+        max_episode_count=max_episode_count,
+        max_episode_generation_attempt=max_episode_generation_attempt,
+        gamma=gamma,
     )
 
-    generate_routes_gif(race_track_obj, race_track)
+    if MC_control_result == True:
+        generate_routes_gif(race_track_obj, race_track)
+    else:
+        print("Policy failed, ending algorithm.")
 
 if __name__ == "__main__":
     main()
