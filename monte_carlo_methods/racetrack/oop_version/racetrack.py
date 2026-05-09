@@ -2,6 +2,10 @@ import numpy as np
 import racetrack_utils as utils
 import logging
 import logging.config
+from tqdm import tqdm
+
+# format for tqdm progress bar
+bar_format = "[{bar:10}] {percentage:3.0f}% | ETA {remaining}"
 
 formatter = logging.Formatter()
 logging.config.dictConfig(
@@ -125,6 +129,25 @@ def off_policy_control(
     successful_ep_counter = [0 for _ in range(len(Racetrack.start_coord_list))]
     successful_epi_dict = dict(zip(Racetrack.start_coord_list, successful_ep_counter))
     Episode = utils.Episode(Racetrack, behaviour_policy)
+    logger.info("starting off-policy control")
+
+    # define progress bar for successful episode count
+    pbar_overall = tqdm(
+        total=max_episode_count,
+        desc="successful incremental prediction runs",
+        position=0,
+    )
+
+    # define progress bars for successful episode's start state count, bars are a dict, so values are accessed from the key (state coord)
+    pbar_starts = {
+        coord: tqdm(
+            total=min_successful_episode,
+            desc=f"episode success for start coord {coord}",
+            position=i + 1,  # +1 because the first position is for overall pbar
+        )
+        for i, coord in enumerate(Racetrack.start_coord_list)
+    }
+
     while True:
         Episode.policy = behaviour_policy
         Episode.episode = []  # reset episode list
@@ -134,10 +157,12 @@ def off_policy_control(
             ):
                 logger.debug("incremental prediction successful")
                 episode_count += 1  # successful attempt counter
+                pbar_overall.update(1)  # update for pbar too
                 ep_generation_attempt += 1  # general attempt counter
-                successful_epi_dict[  # counter for starting state for this episode
-                    (Episode.episode[-1][0][0], Episode.episode[-1][0][1])
-                ] += 1
+                success_coord = (Episode.episode[-1][0][0], Episode.episode[-1][0][1])
+                # counter for starting state for this successful episode
+                successful_epi_dict[(success_coord)] += 1
+                pbar_starts[success_coord].update(1)
             else:
                 logger.debug("creating new behaviour policy with epsilon %.2f", epsilon)
                 behaviour_policy = utils.get_policy(Racetrack, epsilon)
