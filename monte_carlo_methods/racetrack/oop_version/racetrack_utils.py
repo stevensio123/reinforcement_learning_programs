@@ -39,8 +39,8 @@ class Racetrack:
         self.target_policy_dict = np.empty(self.state_values.shape, dtype=object)
 
     def get_state_value(self, state):
-        logger.debug("getting state value of state: {}".format(state))
         x, y, vx, vy = state
+        logger.debug("getting state value of state: %d, %d, %d, %d", x, y, vx, vy)
         return self.state_values[x, y, vx, vy]
         # equivalent to:
         # return self.state_values[x][y][vx][vy]
@@ -58,7 +58,7 @@ def get_next_state(Racetrack, state, a):
         y = Racetrack.y_terminal_smallest_loc
     try:
         Racetrack.racetrack[x][y]
-        logger.debug("next state is {}".format(Racetrack.racetrack[x][y]))
+        logger.debug("next state is %s", Racetrack.racetrack[x][y])
     except IndexError:  # out of bounds
         logger.debug("next state is out of bounds.")
         new_coord = Racetrack.start_coord_list[
@@ -66,6 +66,7 @@ def get_next_state(Racetrack, state, a):
         ]
         return (new_coord[0], new_coord[1], 0, 0)
     if Racetrack.racetrack[x][y] == "#":  # crash
+        logger.debug("car crashed, starting over.")
         new_coord = Racetrack.start_coord_list[
             np.random.randint(len(Racetrack.start_coord_list))
         ]
@@ -76,7 +77,7 @@ def get_next_state(Racetrack, state, a):
 
 def get_action_space(state, state_symbol="N"):
     """
-    Takes in state and returns list of possible actions (acceleration) that can be taken from that state.
+    Takes in state (tuple of x, y, vx, vy) and returns list of possible actions (acceleration) that can be taken from that state.
     Acceleration can be -1, 0, or 1 in both x and y, and velocity < 5
     """
     action_space = []
@@ -95,14 +96,15 @@ def get_action_space(state, state_symbol="N"):
 
 def get_policy(obj: Racetrack, epsilon=0.1):
     """
-    takes in a StateSpace object and epsilon value,
-    returns an array with the same shape as the state space,
-    with the chosen action for each state according to the behavior policy as the elements.
+    takes in a Racetrack object and epsilon value,
+    returns an array with the same shape as the racetrack state space,
+    with the chosen action for each state according to the behavior policy as the elements' value.
     """
     state_values = obj.state_values
 
-    # use object array to store lists as elements (because there are two actions)
+    # use "object" type array to store lists as elements (because there are two actions)
     policy = np.empty(state_values.shape, dtype=object)
+    logger.debug("generating policy with epsilon = %d", epsilon)
     for x in range(state_values.shape[0]):
         for y in range(state_values.shape[1]):
             for vx in range(state_values.shape[2]):
@@ -179,21 +181,21 @@ class Episode:
             current_state = next_state
             # print(f"No crash at step {self.steps} at {current_state} with {action}")
             if self.steps > max_steps:  # to prevent infinite loop in case of bad policy
-                print(
+                logger.debug(
                     "Episode generation stopped after 10000000 steps to prevent infinite loop."
                 )
-                print(f"    Last state: {current_state}")
+                logger.debug(f"    Last state: {current_state}")
                 return False
-        print("Episode generated")
-        print(f"    Steps taken: {self.steps}")
+        logger.debug("Episode generated")
+        logger.debug(f"    Steps taken: {self.steps}")
         return True
 
     def __str__(self):
-        print(f"Episode steps: {self.steps}")
-        print(
+        logger.debug(f"Episode steps: {self.steps}")
+        logger.debug(
             f"Episode trajectory (first 3 steps): {self.episode[:3]}"
         )  # print first 3 steps of episode
-        print(
+        logger.debug(
             f"Episode trajectory (last 3 steps): {self.episode[-3:]}"
         )  # print last 3 steps of episode
         return f"Total steps generated: {self.steps}"
