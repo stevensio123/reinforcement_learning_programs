@@ -81,9 +81,9 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
         Racetrack.state_values[next_state] = round(
             Racetrack.get_state_value(next_state)
             + (
-                (W / (cum_IS[x, y, v1, v2, a1, a2]))
+                (w / (cum_is[x, y, v1, v2, a1, a2]))
                 * (
-                    G - Racetrack.get_state_value(next_state)
+                    g - Racetrack.get_state_value(next_state)
                 )  # i think old is wrong following pseudo code (should be updating next state not current state value)
             ),
             3,
