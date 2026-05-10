@@ -8,13 +8,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import os
 
-race_track = ["####EEEE",
-              "#NNNNNNE",
-              "#NNNNNNE",
-              "#NNNNNNE",
-              "#NNNNN##",
-              "#SSSSS##"]
-
 '''
 verts = [(2,4), (3,3), (4,2), (7,1)]
 
