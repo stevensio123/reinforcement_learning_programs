@@ -1,9 +1,12 @@
 import numpy as np
 import racetrack_utils as utils
 from PIL import Image
-import os
+
+# import os
 import shutil
 import matplotlib.pyplot as plt
+from pathlib import Path
+
 
 def incremental_prediction(Racetrack, episode, cum_IS, epsilon, gamma=1):
 
@@ -24,15 +27,19 @@ def incremental_prediction(Racetrack, episode, cum_IS, epsilon, gamma=1):
 
         # update q(s,a)
         next_state = utils.get_next_state(Racetrack, episode[step][0], episode[step][1])
-        Racetrack.state_values[x][y][v1][v2] = round(Racetrack.get_state_value(next_state) 
-            + ( (W / (cum_IS[x, y, v1, v2, a1, a2]))
-            * (G - Racetrack.get_state_value(next_state)) # i think old is wrong following pseudo code (should be updating next state not current state value)
-        ), 3) # NEW added rounding to 3 d.p for more accurate rounding
+        Racetrack.state_values[x][y][v1][v2] = round(
+            Racetrack.get_state_value(next_state)
+            + (
+                (W / (cum_IS[x, y, v1, v2, a1, a2]))
+                * (
+                    G - Racetrack.get_state_value(next_state)
+                )  # i think old is wrong following pseudo code (should be updating next state not current state value)
+            ),
+            3,
+        )  # NEW added rounding to 3 d.p for more accurate rounding
 
         # update target policy action based on best value of actions
-        action_space_ls = utils.get_action_space(
-            episode[step][0]
-        )
+        action_space_ls = utils.get_action_space(episode[step][0])
         # take optimal action according to current state values
         optimal_action_idx = utils.get_optimal_action(
             Racetrack, episode[step][0], action_space_ls
@@ -93,7 +100,10 @@ def off_policy_control(
                 (episode.episode[-1][0][0], episode.episode[-1][0][1])
             ] += 1
             print("Added one success attempt.")
-            if min_successful_episode <= min(successful_epi_dict.values()) and episode_count >= max_episode_count:
+            if (
+                min_successful_episode <= min(successful_epi_dict.values())
+                and episode_count >= max_episode_count
+            ):
                 print(
                     "Off-policy control achieved minimum successful episodes for each starting location, ending run..."
                 )
@@ -127,7 +137,7 @@ def off_policy_control(
 
 def build_track(og_racetrack):
     racetrack = np.array([list(row) for row in og_racetrack])
-    track = np.ones(shape=(len(racetrack),len(racetrack[0])))
+    track = np.ones(shape=(len(racetrack), len(racetrack[0])))
     for row in range(len(racetrack)):
         for column in range(len(racetrack[row])):
             if racetrack[row][column] == "#":
@@ -136,38 +146,70 @@ def build_track(og_racetrack):
                 track[row][column] = 0.4
             elif racetrack[row][column] == "S":
                 track[row][column] = 0.6
-    
+
     return track
+
 
 def generate_routes_gif(Racetrack, race_track):
     episode = utils.Episode(Racetrack, Racetrack.target_policy_dict)
     track = build_track(race_track)
-    os.chdir(f'reinforcement_learning_programs/monte_carlo_methods/racetrack/oop_version')
+    # os.chdir(f'reinforcement_learning_programs/monte_carlo_methods/racetrack/oop_version')
+    gifs_dir = Path("racetrack_gifs")
+    shutil.rmtree(gifs_dir, ignore_errors=True)
+    gifs_dir.mkdir(exist_ok=True)
     for each_start in range(len(Racetrack.start_coord_list)):
-        shutil.rmtree(f'racetrack_gifs/racetrack_{each_start}', ignore_errors=True)
-        os.mkdir(f'racetrack_gifs/racetrack_{each_start}')
-        images=[]
-        episode.episode=[]
+        # shutil.rmtree(f"racetrack_gifs/racetrack_{each_start}", ignore_errors=True)
+        # os.mkdir(f'racetrack_gifs/racetrack_{each_start}')
+        images = []
+        episode.episode = []
         episode.generate(Racetrack, start_pos=Racetrack.start_coord_list[each_start])
         for step in range(len(episode.episode)):
-            track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][episode.episode[step][0][0]] = 0.2 # [y][x] not [x][y]
+            track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
+                episode.episode[step][0][0]
+            ] = 0.2
+            plt.figure(figsize=(10, 10))
             plt.imshow(track)
-            plt.title(f'Racetrack with start location {Racetrack.start_coord_list[each_start]}', fontsize=10)
-            plt.savefig(f'racetrack_gifs/racetrack_{each_start}/Start-{each_start}-Step-{step}.png')
-            image = Image.open(f'racetrack_gifs/racetrack_{each_start}/Start-{each_start}-Step-{step}.png')
+            plt.title(
+                f"Racetrack with start location {Racetrack.start_coord_list[each_start]}",
+                fontsize=10,
+            )
+            output_dir = Path(gifs_dir / f"racetrack_{each_start}")
+            output_dir.mkdir(exist_ok=True)
+
+            plt.savefig(output_dir / f"Start-{each_start}-Step-{step}.png")
+            # plt.savefig(
+            #    f"racetrack_gifs/racetrack_{each_start}/Start-{each_start}-Step-{step}.png"
+            # )
+            image = Image.open(output_dir / f"Start-{each_start}-Step-{step}.png")
+            # image = Image.open(
+            #    f"racetrack_gifs/racetrack_{each_start}/Start-{each_start}-Step-{step}.png"
+            # )
             images.append(image)
-            if race_track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][episode.episode[step][0][0]] == "S":
-                track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][episode.episode[step][0][0]] = 0.6
+            if (
+                race_track[
+                    len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]
+                ][episode.episode[step][0][0]]
+                == "S"
+            ):
+                track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
+                    episode.episode[step][0][0]
+                ] = 0.6
             else:
-                track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][episode.episode[step][0][0]] = 1
-        images[0].save(f'racetrack_gifs/racetrack_{each_start}/Optimal_path_for_{Racetrack.start_coord_list[each_start]}.gif', save_all=True, append_images=images[1:], duration=200, loop=0)
+                track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
+                    episode.episode[step][0][0]
+                ] = 1
+        images[0].save(
+            output_dir
+            / f"Optimal_path_for_{Racetrack.start_coord_list[each_start]}.gif",
+            save_all=True,
+            append_images=images[1:],
+            duration=200,
+            loop=0,
+        )
+
 
 def main():
-    race_track = ["#######E", 
-                  "#NNNNNNE", 
-                  "#NNNNNNE", 
-                  "#NNNNNNE", 
-                  "#SS#####"]
+    race_track = ["#######E", "#NNNNNNE", "#NNNNNNE", "#NNNNNNE", "#SS#####"]
 
     epsilon = 0.1
     gamma = 0.9
@@ -188,6 +230,6 @@ def main():
     else:
         print("Policy failed, ending algorithm.")
 
+
 if __name__ == "__main__":
     main()
-

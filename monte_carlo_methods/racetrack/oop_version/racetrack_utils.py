@@ -18,9 +18,9 @@ class Racetrack:
         )
         """
         rng = np.random.default_rng()
-        self.state_values = np.round(rng.uniform(
-            -5, -2, size=(len(racetrack[0]), len(racetrack), 5, 5)
-        ), 3) # NEW added rounding to 3 d.p for more accurate rounding
+        self.state_values = np.round(
+            rng.uniform(-5, -2, size=(len(racetrack[0]), len(racetrack), 5, 5)), 3
+        )  # NEW added rounding to 3 d.p for more accurate rounding
 
         self.start_coord_list = []
         self.terminal_coord_list = []
@@ -178,7 +178,7 @@ class Episode:
             if current_loc in Racetrack.terminal_coord_list:
                 break
             elif action == None:
-                self.episode.append((current_state, [0,0]))
+                self.episode.append((current_state, [0, 0]))
                 break
             next_state = get_next_state(Racetrack, current_state, action)
             current_loc = (next_state[0], next_state[1])
