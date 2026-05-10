@@ -31,7 +31,7 @@ def incremental_prediction(Racetrack, episode, cum_IS, epsilon, gamma=1):
 
         # update target policy action based on best value of actions
         action_space_ls = utils.get_action_space(
-            episode[step][0], Racetrack.racetrack[x][y]
+            episode[step][0]
         )
         # take optimal action according to current state values
         optimal_action_idx = utils.get_optimal_action(
@@ -150,8 +150,7 @@ def generate_routes_gif(Racetrack, race_track):
         episode.episode=[]
         episode.generate(Racetrack, start_pos=Racetrack.start_coord_list[each_start])
         for step in range(len(episode.episode)):
-            track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][episode.episode[step][0][0]] = 0.2
-            plt.figure(figsize=(10, 10))
+            track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][episode.episode[step][0][0]] = 0.2 # [y][x] not [x][y]
             plt.imshow(track)
             plt.title(f'Racetrack with start location {Racetrack.start_coord_list[each_start]}', fontsize=10)
             plt.savefig(f'racetrack_gifs/racetrack_{each_start}/Start-{each_start}-Step-{step}.png')

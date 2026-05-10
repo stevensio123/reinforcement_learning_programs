@@ -77,7 +77,7 @@ def get_next_state(Racetrack, state, a):
         return (x, y, vx, vy)
 
 
-def get_action_space(state, state_symbol="N"):
+def get_action_space(state):
     """
     Takes in state and returns list of possible actions (acceleration) that can be taken from that state.
     Acceleration can be -1, 0, or 1 in both x and y, and velocity < 5
@@ -89,8 +89,7 @@ def get_action_space(state, state_symbol="N"):
         if 0 <= (vx + horizontal) < 5:
             for vertical in accel:
                 if 0 < (vy + vertical) < 5 or (
-                    (state_symbol == "S" or (vx + horizontal) != 0)
-                    and 0 <= (vy + vertical) < 5
+                    (vx + horizontal) != 0 and 0 <= (vy + vertical) < 5
                 ):
                     action_space.append([horizontal, vertical])
     return action_space
@@ -114,7 +113,7 @@ def get_policy(obj: Racetrack, epsilon=0.1):
                     # print(state)
                     # choose optimal / random action:
                     # print(f"{obj.racetrack[x][y]}")
-                    action_space_ls = get_action_space(state, obj.racetrack[x][y])
+                    action_space_ls = get_action_space(state)
                     if random.random() > epsilon:
                         # take optimal action according to current state values
                         action_idx = get_optimal_action(obj, state, action_space_ls)
