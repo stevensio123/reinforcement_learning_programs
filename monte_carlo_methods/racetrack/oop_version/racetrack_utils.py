@@ -12,9 +12,15 @@ class Racetrack:
         racetrack_reverse = racetrack[::-1]
         self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
 
+        """
         self.state_values = np.random.randint(
-            -5, 0, size=(len(racetrack[0]), len(racetrack), 5, 5)
+            -5, -2, size=(len(racetrack[0]), len(racetrack), 5, 5))
         )
+        """
+        rng = np.random.default_rng()
+        self.state_values = np.round(rng.uniform(
+            -5, -2, size=(len(racetrack[0]), len(racetrack), 5, 5)
+        ), 3) # NEW added rounding to 3 d.p for more accurate rounding
 
         self.start_coord_list = []
         self.terminal_coord_list = []
@@ -22,6 +28,7 @@ class Racetrack:
             for j in range(len(self.racetrack[i])):
                 if self.racetrack[i][j] == "E":
                     self.terminal_coord_list.append((i, j))
+                    self.state_values[i][j] = 0
                 if self.racetrack[i][j] == "S":
                     self.start_coord_list.append((i, j))
         """
@@ -153,22 +160,28 @@ class Episode:
         self.episode = []
         self.policy = policy
 
-    def generate(self, Racetrack, max_steps=100000):
+    def generate(self, Racetrack, max_steps=100, start_pos=None):
         """
         method to create episode by following the policy until it reaches terminal state.
         """
-        current_loc = Racetrack.start_coord_list[
-            np.random.randint(len(Racetrack.start_coord_list))
-        ]
+        if start_pos == None:
+            current_loc = Racetrack.start_coord_list[
+                np.random.randint(len(Racetrack.start_coord_list))
+            ]
+        else:
+            current_loc = start_pos
         current_state = (current_loc[0], current_loc[1], 0, 0)
         self.steps = 0
 
         while True:
             x, y, vx, vy = current_state
             action = self.policy[x][y][vx][vy]
-            next_state = get_next_state(Racetrack, current_state, action)
             if current_loc in Racetrack.terminal_coord_list:
                 break
+            elif action == None:
+                self.episode.append((current_state, [0,0]))
+                break
+            next_state = get_next_state(Racetrack, current_state, action)
             current_loc = (next_state[0], next_state[1])
             self.steps += 1
             self.episode.append((current_state, action))
@@ -176,7 +189,7 @@ class Episode:
             # print(f"No crash at step {self.steps} at {current_state} with {action}")
             if self.steps > max_steps:  # to prevent infinite loop in case of bad policy
                 print(
-                    "Episode generation stopped after 10000000 steps to prevent infinite loop."
+                    f"Episode generation stopped after {max_steps} steps to prevent infinite loop."
                 )
                 print(f"    Last state: {current_state}")
                 return False
