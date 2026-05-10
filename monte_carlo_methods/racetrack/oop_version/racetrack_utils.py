@@ -18,9 +18,9 @@ class Racetrack:
         )
         """
         rng = np.random.default_rng()
-        self.state_values = np.round(rng.uniform(
-            -5, -2, size=(len(racetrack[0]), len(racetrack), 5, 5)
-        ), 3) # NEW added rounding to 3 d.p for more accurate rounding
+        self.state_values = np.round(
+            rng.uniform(-5, -2, size=(len(racetrack[0]), len(racetrack), 5, 5)), 3
+        )  # NEW added rounding to 3 d.p for more accurate rounding
 
         self.start_coord_list = []
         self.terminal_coord_list = []
@@ -77,7 +77,7 @@ def get_next_state(Racetrack, state, a):
         return (x, y, vx, vy)
 
 
-def get_action_space(state, state_symbol="N"):
+def get_action_space(state):
     """
     Takes in state and returns list of possible actions (acceleration) that can be taken from that state.
     Acceleration can be -1, 0, or 1 in both x and y, and velocity < 5
@@ -89,8 +89,7 @@ def get_action_space(state, state_symbol="N"):
         if 0 <= (vx + horizontal) < 5:
             for vertical in accel:
                 if 0 < (vy + vertical) < 5 or (
-                    (state_symbol == "S" or (vx + horizontal) != 0)
-                    and 0 <= (vy + vertical) < 5
+                    (vx + horizontal) != 0 and 0 <= (vy + vertical) < 5
                 ):
                     action_space.append([horizontal, vertical])
     return action_space
@@ -114,7 +113,7 @@ def get_policy(obj: Racetrack, epsilon=0.1):
                     # print(state)
                     # choose optimal / random action:
                     # print(f"{obj.racetrack[x][y]}")
-                    action_space_ls = get_action_space(state, obj.racetrack[x][y])
+                    action_space_ls = get_action_space(state)
                     if random.random() > epsilon:
                         # take optimal action according to current state values
                         action_idx = get_optimal_action(obj, state, action_space_ls)
@@ -179,7 +178,7 @@ class Episode:
             if current_loc in Racetrack.terminal_coord_list:
                 break
             elif action == None:
-                self.episode.append((current_state, [0,0]))
+                self.episode.append((current_state, [0, 0]))
                 break
             next_state = get_next_state(Racetrack, current_state, action)
             current_loc = (next_state[0], next_state[1])
