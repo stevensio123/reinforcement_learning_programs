@@ -130,7 +130,6 @@ def off_policy_control(
     cum_is = np.zeros(
         (len(Racetrack.racetrack), len(Racetrack.racetrack[0]), 5, 5, 3, 3), int
     )
-    success = True
     behaviour_policy = utils.get_policy(Racetrack, epsilon)
     episode_count = 0
     ep_generation_attempt = 0
@@ -198,7 +197,7 @@ def off_policy_control(
                 logger.info(
                     "off-policy control achieved minimum successful episodes for each starting location, ending run..."
                 )
-                break
+                return True
             behaviour_policy = utils.get_policy(Racetrack, epsilon)
             # ep_generation_attempt = 0
         else:
@@ -215,7 +214,7 @@ def off_policy_control(
                     logger.info(
                         "epsilon value at maximum of 0.99, stopping off-policy control."
                     )
-                    break
+                    return False
                 ep_generation_attempt = 0
             else:
                 logger.debug(
