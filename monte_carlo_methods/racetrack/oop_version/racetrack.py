@@ -236,8 +236,8 @@ def main():
     MC_control_result = off_policy_control(
         Racetrack=race_track_obj,
         epsilon=0.1,
-        max_episode_count=1000000,
-        min_successful_episode=1000,
+        max_episode_count=500,
+        min_successful_episode=100,
         max_episode_generation_attempt=20,
         gamma=0.9,
     )
