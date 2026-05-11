@@ -1,38 +1,89 @@
 import numpy as np
 import racetrack_utils as utils
-from PIL import Image
+import logging
+import logging.config
+from tqdm import tqdm
 
-# import os
-import shutil
-import matplotlib.pyplot as plt
-from pathlib import Path
+# format for tqdm progress bar
+pbar_format = "{desc:<40}[{bar:50}] {percentage:3.0f}% | ETA {remaining}"
+
+formatter = logging.Formatter()
+logging.config.dictConfig(
+    {
+        "version": 1,
+        "formatters": {
+            "standard": {
+                "format": "%(asctime)s | %(name)s - %(levelname)s | %(message)s"
+            }
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "standard",
+                "level": "WARNING",  # setting to INFO / DEBUG causes conflicts with displaying tqdm progress bars
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": "racetrack.log",
+                "formatter": "standard",
+                "level": "DEBUG",
+                "mode": "w",  # write or replace log file
+            },
+        },
+        "root": {
+            "level": "DEBUG",
+            "handlers": ["console", "file"],  # logs to both console and file
+        },
+        # this part only needed if want to customize logger in utils
+        # "loggers": {    #   utils.__name__: {
+        #       "level": "DEBUG"
+        #   }
+        # }
+    }
+)
+
+logger = logging.getLogger(__name__)
 
 
-def incremental_prediction(Racetrack, episode, cum_IS, epsilon, gamma=1):
-
+def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
+    """
+    Racetrack : Racetrack class from utils.
+    episode : episode list generated from Episode class in utils.
+    cum_is : the current cumulative importance sampling ratio in the policy control iteration.
+    epsilon : prob. of choosing random action. Used to compute b(A|S), the probability of action given state in the behaviour policy.
+    gamma : the weight parameter used on the rewards.
+    """
     episode.reverse()
-    G = 0
-    W = 1
+    g = 0
+    w = 1
     for step in range(len(episode) - 1):
-        # G already accounts for reward -1 for each step
+        # g already accounts for reward -1 for each step
         step += 1
-        G = (gamma * G) - 1
+        g = (gamma * g) - 1
         x, y, v1, v2 = episode[step][0]  # state
         a1, a2 = episode[step][1]  # action
-        cum_IS[x, y, v1, v2, a1, a2] += W
+        cum_is[x, y, v1, v2, a1, a2] += w
 
-        print(
-            f"Step T-{step} coordinate: ({x}, {y}, {v1}, {v2}) with action: ({a1}, {a2})"
+        logger.debug(
+            "step t-%d coordinate: (%d, %d, %d, %d) with action: (%d, %d)",
+            step,
+            x,
+            y,
+            v1,
+            v2,
+            a1,
+            a2,
         )
 
-        # update q(s,a)
+        # update q(s,a) using estimated value of target policy
+        # get next state using state and action of current step
         next_state = utils.get_next_state(Racetrack, episode[step][0], episode[step][1])
-        Racetrack.state_values[x][y][v1][v2] = round(
+        Racetrack.state_values[next_state] = round(
             Racetrack.get_state_value(next_state)
             + (
-                (W / (cum_IS[x, y, v1, v2, a1, a2]))
+                (w / (cum_is[x, y, v1, v2, a1, a2]))
                 * (
-                    G - Racetrack.get_state_value(next_state)
+                    g - Racetrack.get_state_value(next_state)
                 )  # i think old is wrong following pseudo code (should be updating next state not current state value)
             ),
             3,
@@ -46,16 +97,19 @@ def incremental_prediction(Racetrack, episode, cum_IS, epsilon, gamma=1):
         )
         Racetrack.target_policy_dict[x][y][v1][v2] = action_space_ls[optimal_action_idx]
 
-        print(f"  Action state value: {Racetrack.get_state_value(next_state)}")
-        print(
-            f"  Target policy action: {Racetrack.target_policy_dict[x][y][v1][v2]} with state value: {Racetrack.get_state_value(utils.get_next_state(Racetrack, episode[step][0], Racetrack.target_policy_dict[x][y][v1][v2]))}"
-        )
-
         # compare if target_policy action matches current action taken
         if Racetrack.target_policy_dict[x][y][v1][v2] != episode[step][1]:
+            logger.debug(
+                "behaviour policy action and target policy action at step %d mismatch",
+                step,
+            )
             return False
 
-        W = W / ((1 - epsilon) + (epsilon / len(action_space_ls)))
+        # update importance sampling ratio
+        w = w / ((1 - epsilon) + (epsilon / len(action_space_ls)))
+        logger.debug("importance sampling weight W = %d at step %d", w, step)
+
+    return True
 
 
 def off_policy_control(
@@ -67,146 +121,108 @@ def off_policy_control(
     gamma=1,
 ):
     """
+    Racetrack: Racetrack object from utils.
     max_episode_count: determines the maximum amount of successful episodes needed to be generated.
     min_successful_episode: determines the minimum amount of successful episodes generated for each starting positions.
-    max_episode_generation_attempt: determines the maximum amount of ANY episode generated (success or failure).
+    max_episode_generation_attempt: determines the maximum amount of any episode generated (success or failure).
     """
     # cumulative sum sampling ratio: state = 4d, action = 3d; total 7d
-    cum_IS = np.zeros(
+    cum_is = np.zeros(
         (len(Racetrack.racetrack), len(Racetrack.racetrack[0]), 5, 5, 3, 3), int
     )
-    success = True
     behaviour_policy = utils.get_policy(Racetrack, epsilon)
     episode_count = 0
     ep_generation_attempt = 0
     successful_ep_counter = [0 for _ in range(len(Racetrack.start_coord_list))]
     successful_epi_dict = dict(zip(Racetrack.start_coord_list, successful_ep_counter))
-    episode = utils.Episode(Racetrack, behaviour_policy)
+    Episode = utils.Episode(Racetrack, behaviour_policy)
+    logger.info("starting off-policy control")
+    # tqdm.write("starting off-policy control")
+
+    # define progress bar for epsilon value
+    pbar_epsilon = tqdm(
+        total=1,
+        desc="current epsilon value for policy regeneration",
+        position=0,
+        leave=True,
+        bar_format=pbar_format,
+    )
+    # start bar at initialized epsilon
+    pbar_epsilon.update(epsilon)
+
+    # define progress bar for successful episode count
+    pbar_overall = tqdm(
+        total=max_episode_count,
+        desc="successful incremental prediction runs",
+        position=1,
+        leave=True,
+        bar_format=pbar_format,
+    )
+
+    # define progress bars for successful episode's start state count, bars are a dict, so values are accessed from the key (state coord)
+    pbar_starts = {
+        coord: tqdm(
+            total=min_successful_episode,
+            desc=f"episode success for start coord {coord}",
+            position=i + 2,  # +2 because the epsilon and overall take up position 0, 1
+            leave=True,
+            bar_format=pbar_format,
+        )
+        for i, coord in enumerate(Racetrack.start_coord_list)
+    }
+
     while True:
-        episode.policy = behaviour_policy
-        episode.episode = []
-        if episode.generate(Racetrack):
-            if (
-                incremental_prediction(
-                    Racetrack, episode.episode, cum_IS, epsilon, gamma
-                )
-                == False
+        Episode.policy = behaviour_policy
+        Episode.episode = []  # reset episode list
+        if Episode.generate(Racetrack):
+            if incremental_prediction(
+                Racetrack, Episode.episode, cum_is, epsilon, gamma
             ):
+                logger.debug("incremental prediction successful")
+                episode_count += 1  # successful attempt counter
+                pbar_overall.update(1)  # update for pbar too
+                ep_generation_attempt += 1  # general attempt counter
+                success_coord = (Episode.episode[-1][0][0], Episode.episode[-1][0][1])
+                # counter for starting state for this successful episode
+                successful_epi_dict[(success_coord)] += 1
+                pbar_starts[(success_coord)].update(1)
+            else:
+                logger.debug("creating new behaviour policy with epsilon %.2f", epsilon)
                 behaviour_policy = utils.get_policy(Racetrack, epsilon)
                 continue
-            episode_count += 1  # successful attempt counter
-            ep_generation_attempt += 1  # general attempt counter
-            successful_epi_dict[
-                (episode.episode[-1][0][0], episode.episode[-1][0][1])
-            ] += 1
-            print("Added one success attempt.")
-            if (
-                min_successful_episode <= min(successful_epi_dict.values())
-                and episode_count >= max_episode_count
+
+            if (min(successful_epi_dict.values()) >= min_successful_episode) and (
+                episode_count >= max_episode_count
             ):
-                print(
-                    "Off-policy control achieved minimum successful episodes for each starting location, ending run..."
+                logger.info(
+                    "off-policy control achieved minimum successful episodes for each starting location, ending run..."
                 )
-                print("Off-policy completed.")
-                return success
-            print(
-                f"Off-policy control successful at episode {episode_count}, continuing... \n Smallest success value: {min(successful_epi_dict.values())}"
-            )
+                return True
             behaviour_policy = utils.get_policy(Racetrack, epsilon)
-            ep_generation_attempt = 0
+            # ep_generation_attempt = 0
         else:
-            """ep_generation_attempt += 1  # general attempt counter
-            print(
-                f"Episode generation reached max step, generation attempt {ep_generation_attempt} failed..."
-            )
+            ep_generation_attempt += 1  # general attempt counter
             if ep_generation_attempt > max_episode_generation_attempt:
+                logger.debug(
+                    "episode generation attempts reached maximum of %d",
+                    max_episode_generation_attempt,
+                )
                 if epsilon < 1:
                     epsilon += 0.01
-                    print(
-                        f"Retrying with new behaviour policy with epsilon value of {round(epsilon, 2)} ...."
-                    )
+                    pbar_epsilon.update(0.01)
                 else:
-                    print(
-                        "Epsilon value at maximum of 0.99, stopping off-policy control."
+                    logger.info(
+                        "epsilon value at maximum of 0.99, stopping off-policy control."
                     )
-                    success = False
-                    break
-                ep_generation_attempt = 0"""
-            behaviour_policy = utils.get_policy(Racetrack, epsilon)
-
-
-def build_track(og_racetrack):
-    racetrack = np.array([list(row) for row in og_racetrack])
-    track = np.ones(shape=(len(racetrack), len(racetrack[0])))
-    for row in range(len(racetrack)):
-        for column in range(len(racetrack[row])):
-            if racetrack[row][column] == "#":
-                track[row][column] = 0
-            elif racetrack[row][column] == "E":
-                track[row][column] = 0.4
-            elif racetrack[row][column] == "S":
-                track[row][column] = 0.6
-
-    return track
-
-
-def generate_routes_gif(Racetrack, race_track):
-    episode = utils.Episode(Racetrack, Racetrack.target_policy_dict)
-    track = build_track(race_track)
-    # os.chdir(f'reinforcement_learning_programs/monte_carlo_methods/racetrack/oop_version')
-    gifs_dir = Path("racetrack_gifs")
-    shutil.rmtree(gifs_dir, ignore_errors=True)
-    gifs_dir.mkdir(exist_ok=True)
-    for each_start in range(len(Racetrack.start_coord_list)):
-        # shutil.rmtree(f"racetrack_gifs/racetrack_{each_start}", ignore_errors=True)
-        # os.mkdir(f'racetrack_gifs/racetrack_{each_start}')
-        images = []
-        episode.episode = []
-        episode.generate(Racetrack, start_pos=Racetrack.start_coord_list[each_start])
-        for step in range(len(episode.episode)):
-            track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
-                episode.episode[step][0][0]
-            ] = 0.2
-            plt.figure(figsize=(10, 10))
-            plt.imshow(track)
-            plt.title(
-                f"Racetrack with start location {Racetrack.start_coord_list[each_start]}",
-                fontsize=10,
-            )
-            output_dir = Path(gifs_dir / f"racetrack_{each_start}")
-            output_dir.mkdir(exist_ok=True)
-
-            plt.savefig(output_dir / f"Start-{each_start}-Step-{step}.png")
-            # plt.savefig(
-            #    f"racetrack_gifs/racetrack_{each_start}/Start-{each_start}-Step-{step}.png"
-            # )
-            image = Image.open(output_dir / f"Start-{each_start}-Step-{step}.png")
-            # image = Image.open(
-            #    f"racetrack_gifs/racetrack_{each_start}/Start-{each_start}-Step-{step}.png"
-            # )
-            images.append(image)
-            if (
-                race_track[
-                    len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]
-                ][episode.episode[step][0][0]]
-                == "S"
-            ):
-                track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
-                    episode.episode[step][0][0]
-                ] = 0.6
+                    return False
+                ep_generation_attempt = 0
             else:
-                track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
-                    episode.episode[step][0][0]
-                ] = 1
-        images[0].save(
-            output_dir
-            / f"Optimal_path_for_{Racetrack.start_coord_list[each_start]}.gif",
-            save_all=True,
-            append_images=images[1:],
-            duration=200,
-            loop=0,
-        )
-
+                logger.debug(
+                    "episode generation reached max step, generation attempt %d failed...",
+                    ep_generation_attempt,
+                )
+                logger.debug("creating new behaviour policy with epsilon %.2f", epsilon)
+                behaviour_policy = utils.get_policy(Racetrack, epsilon)
 
 def main():
     race_track = ["#######E", "#NNNNNNE", "#NNNNNNE", "#NNNNNNE", "#SS#####"]
@@ -218,15 +234,16 @@ def main():
     race_track_obj = utils.Racetrack(race_track)
 
     MC_control_result = off_policy_control(
-        race_track_obj,
-        epsilon=epsilon,
-        max_episode_count=max_episode_count,
-        max_episode_generation_attempt=max_episode_generation_attempt,
-        gamma=gamma,
+        Racetrack=race_track_obj,
+        epsilon=0.1,
+        max_episode_count=500,
+        min_successful_episode=100,
+        max_episode_generation_attempt=20,
+        gamma=0.9,
     )
 
     if MC_control_result == True:
-        generate_routes_gif(race_track_obj, race_track)
+        utils.generate_routes_gif(race_track_obj, race_track)
     else:
         print("Policy failed, ending algorithm.")
 
