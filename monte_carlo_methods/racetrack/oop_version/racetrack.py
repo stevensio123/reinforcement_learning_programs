@@ -1,11 +1,14 @@
 import numpy as np
-import racetrack_utils as utils
 import logging
 import logging.config
 from tqdm import tqdm
+from pathlib import Path
+import racetrack_utils as utils
 
 # format for tqdm progress bar
 pbar_format = "{desc:<40}[{bar:50}] {percentage:3.0f}% | ETA {remaining}"
+
+log_dir = Path(__file__).resolve().parent
 
 formatter = logging.Formatter()
 logging.config.dictConfig(
@@ -24,7 +27,7 @@ logging.config.dictConfig(
             },
             "file": {
                 "class": "logging.FileHandler",
-                "filename": "racetrack.log",
+                "filename": f"{log_dir}/racetrack.log",
                 "formatter": "standard",
                 "level": "DEBUG",
                 "mode": "w",  # write or replace log file
@@ -43,7 +46,6 @@ logging.config.dictConfig(
 )
 
 logger = logging.getLogger(__name__)
-
 
 def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
     """
@@ -100,8 +102,10 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
         # compare if target_policy action matches current action taken
         if Racetrack.target_policy_dict[x][y][v1][v2] != episode[step][1]:
             logger.debug(
-                "behaviour policy action and target policy action at step %d mismatch",
+                "behaviour policy action and target policy action at step %d mismatch with current action value: %f vs expected action value: %f",
                 step,
+                Racetrack.get_state_value(next_state),
+                Racetrack.get_state_value(utils.get_next_state(Racetrack, episode[step][0], Racetrack.target_policy_dict[x][y][v1][v2]))
             )
             return False
 
@@ -117,7 +121,7 @@ def off_policy_control(
     epsilon=0.1,
     max_episode_count=10000,
     min_successful_episode=3,
-    max_episode_generation_attempt=10,
+    max_failed_episode_generation_attempt=1000,
     gamma=1,
 ):
     """
@@ -132,7 +136,7 @@ def off_policy_control(
     )
     behaviour_policy = utils.get_policy(Racetrack, epsilon)
     episode_count = 0
-    ep_generation_attempt = 0
+    ep_generation_failed_attempt = 0
     successful_ep_counter = [0 for _ in range(len(Racetrack.start_coord_list))]
     successful_epi_dict = dict(zip(Racetrack.start_coord_list, successful_ep_counter))
     Episode = utils.Episode(Racetrack, behaviour_policy)
@@ -141,14 +145,14 @@ def off_policy_control(
 
     # define progress bar for epsilon value
     pbar_epsilon = tqdm(
-        total=1,
+        total=1.00,
         desc="current epsilon value for policy regeneration",
         position=0,
         leave=True,
         bar_format=pbar_format,
     )
     # start bar at initialized epsilon
-    pbar_epsilon.update(epsilon)
+    pbar_epsilon.update(0.1)
 
     # define progress bar for successful episode count
     pbar_overall = tqdm(
@@ -164,6 +168,7 @@ def off_policy_control(
         coord: tqdm(
             total=min_successful_episode,
             desc=f"episode success for start coord {coord}",
+            # mininterval=1,
             position=i + 2,  # +2 because the epsilon and overall take up position 0, 1
             leave=True,
             bar_format=pbar_format,
@@ -175,18 +180,20 @@ def off_policy_control(
         Episode.policy = behaviour_policy
         Episode.episode = []  # reset episode list
         if Episode.generate(Racetrack):
+            episode_count += 1  # successful episode generated counter, seperated from the successful predictions
             if incremental_prediction(
                 Racetrack, Episode.episode, cum_is, epsilon, gamma
             ):
                 logger.debug("incremental prediction successful")
-                episode_count += 1  # successful attempt counter
                 pbar_overall.update(1)  # update for pbar too
-                ep_generation_attempt += 1  # general attempt counter
                 success_coord = (Episode.episode[-1][0][0], Episode.episode[-1][0][1])
                 # counter for starting state for this successful episode
                 successful_epi_dict[(success_coord)] += 1
-                pbar_starts[(success_coord)].update(1)
+                if pbar_starts[(success_coord)].n < min_successful_episode:
+                    pbar_starts[(success_coord)].update(1)
+
             else:
+                ep_generation_failed_attempt += 1  # general attempt counter
                 logger.debug("creating new behaviour policy with epsilon %.2f", epsilon)
                 behaviour_policy = utils.get_policy(Racetrack, epsilon)
                 continue
@@ -198,14 +205,21 @@ def off_policy_control(
                     "off-policy control achieved minimum successful episodes for each starting location, ending run..."
                 )
                 return True
+            
+            logger.debug(
+                "Off-policy control successful at episode %d, with smallest success value: %d.",
+                episode_count,
+                min(successful_epi_dict.values())
+            )
             behaviour_policy = utils.get_policy(Racetrack, epsilon)
-            # ep_generation_attempt = 0
+            ep_generation_failed_attempt = 0
+
         else:
-            ep_generation_attempt += 1  # general attempt counter
-            if ep_generation_attempt > max_episode_generation_attempt:
+            ep_generation_failed_attempt += 1  # general attempt counter
+            if ep_generation_failed_attempt > max_failed_episode_generation_attempt:
                 logger.debug(
                     "episode generation attempts reached maximum of %d",
-                    max_episode_generation_attempt,
+                    max_failed_episode_generation_attempt,
                 )
                 if epsilon < 1:
                     epsilon += 0.01
@@ -215,30 +229,56 @@ def off_policy_control(
                         "epsilon value at maximum of 0.99, stopping off-policy control."
                     )
                     return False
-                ep_generation_attempt = 0
+                ep_generation_failed_attempt = 0
             else:
                 logger.debug(
                     "episode generation reached max step, generation attempt %d failed...",
-                    ep_generation_attempt,
+                    ep_generation_failed_attempt,
                 )
                 logger.debug("creating new behaviour policy with epsilon %.2f", epsilon)
                 behaviour_policy = utils.get_policy(Racetrack, epsilon)
 
 def main():
-    race_track = ["#######E", "#NNNNNNE", "#NNNNNNE", "#NNNNNNE", "#SS#####"]
+    race_track = [
+        "####NNNNNNNNNNNNNNE",
+        "####NNNNNNNNNNNNNNE",
+        "###NNNNNNNNNNNNNNNE",
+        "###NNNNNNNNNNNNNNNE",
+        "##NNNNNNNNNNNNNNNNE",
+        "##NNNNNNNNNNNNNNNNE",
+        "#NNNNNNNNNNNNNNNNNE",
+        "#NNNNNNNNNNNNNNNNNE",
+        "NNNNNNNNNNNN#######",
+        "NNNNNNNNNNNN#######",
+        "NNNNNNNNNN#########",
+        "NNNNNNNNNN#########",
+        "NNNNNNNNNN#########",
+        "NNNNNNNNNN#########",
+        "#NNNNNNNNN#########",
+        "#NNNNNNNNN#########",
+        "#NNNNNNNNN#########",
+        "#NNNNNNNNN#########",
+        "#NNNNNNNNN#########",
+        "#NNNNNNNNN#########",
+        "##NNNNNNNN#########",
+        "##NNNNNNNN#########",
+        "##NNNNNNNN#########",
+        "##NNNNNNNN#########",
+        "##NNNNNNNN#########",
+        "##NNNNNNNN#########",
+        "###NNNNNNN#########",
+        "###NNNNNNN#########",
+        "####SSSSSS#########"
+        ]
 
-    epsilon = 0.1
-    gamma = 0.9
-    max_episode_count = 100
-    max_episode_generation_attempt = 100000
     race_track_obj = utils.Racetrack(race_track)
 
     MC_control_result = off_policy_control(
         Racetrack=race_track_obj,
         epsilon=0.1,
-        max_episode_count=500,
-        min_successful_episode=100,
-        max_episode_generation_attempt=20,
+        max_episode_count=10000,
+        min_successful_episode=10,
+        max_failed_episode_generation_attempt=1000,
         gamma=0.9,
     )
 
