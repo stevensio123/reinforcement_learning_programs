@@ -231,17 +231,13 @@ def build_track(og_racetrack):
 
     return track
 
-
 def generate_routes_gif(Racetrack, race_track):
     episode = Episode(Racetrack, Racetrack.target_policy_dict)
     track = build_track(race_track)
-    # os.chdir(f'reinforcement_learning_programs/monte_carlo_methods/racetrack/oop_version')
-    gifs_dir = Path("racetrack_gifs")
+    gifs_dir = Path(__file__).resolve().parent / "raccetrack_gifs"
     shutil.rmtree(gifs_dir, ignore_errors=True)
     gifs_dir.mkdir(exist_ok=True)
     for each_start in range(len(Racetrack.start_coord_list)):
-        # shutil.rmtree(f"racetrack_gifs/racetrack_{each_start}", ignore_errors=True)
-        # os.mkdir(f'racetrack_gifs/racetrack_{each_start}')
         images = []
         episode.episode = []
         episode.generate(Racetrack, start_pos=Racetrack.start_coord_list[each_start])
