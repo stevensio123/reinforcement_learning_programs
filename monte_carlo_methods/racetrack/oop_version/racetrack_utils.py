@@ -1,5 +1,13 @@
 import numpy as np
 import random
+import logging
+from PIL import Image
+# import os
+import shutil
+import matplotlib.pyplot as plt
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class Racetrack:
@@ -8,6 +16,7 @@ class Racetrack:
         class to represent state space of racetrack.
         state value is initialized to random integer between -5 and 1 (inclusive) for each state.
         """
+        logger.info("creating racetrack with input: {}".format(racetrack))
         # reverse and transpose racetrack to match coordinate system (x rows, y rows)
         racetrack_reverse = racetrack[::-1]
         self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
@@ -31,11 +40,7 @@ class Racetrack:
                     self.state_values[i][j] = 0
                 if self.racetrack[i][j] == "S":
                     self.start_coord_list.append((i, j))
-        """
-        class to represent state space of racetrack.
-        state value is initialized to random integer between -5 and 1 (inclusive) for each state.
-        NEW, combined Racetrack and State_space class as these only need to be called once
-        """
+
         self.x_terminal_loc = self.terminal_coord_list[0][0]
         self.y_terminal_locs = []
         for coord in self.terminal_coord_list:
@@ -47,12 +52,14 @@ class Racetrack:
 
     def get_state_value(self, state):
         x, y, vx, vy = state
+        logger.debug("getting state value of state: %d, %d, %d, %d", x, y, vx, vy)
         return self.state_values[x, y, vx, vy]
         # equivalent to:
         # return self.state_values[x][y][vx][vy]
 
 
 def get_next_state(Racetrack, state, a):
+    logger.debug("getting next state of {}".format(state))
     x, y, vx, vy = state
     vx += a[0]
     vy += a[1]
@@ -63,12 +70,15 @@ def get_next_state(Racetrack, state, a):
         y = Racetrack.y_terminal_smallest_loc
     try:
         Racetrack.racetrack[x][y]
+        logger.debug("next state is %s", Racetrack.racetrack[x][y])
     except IndexError:  # out of bounds
+        logger.debug("next state is out of bounds.")
         new_coord = Racetrack.start_coord_list[
             np.random.randint(len(Racetrack.start_coord_list))
         ]
         return (new_coord[0], new_coord[1], 0, 0)
     if Racetrack.racetrack[x][y] == "#":  # crash
+        logger.debug("car crashed, starting over.")
         new_coord = Racetrack.start_coord_list[
             np.random.randint(len(Racetrack.start_coord_list))
         ]
@@ -79,7 +89,7 @@ def get_next_state(Racetrack, state, a):
 
 def get_action_space(state):
     """
-    Takes in state and returns list of possible actions (acceleration) that can be taken from that state.
+    Takes in state (tuple of x, y, vx, vy) and returns list of possible actions (acceleration) that can be taken from that state.
     Acceleration can be -1, 0, or 1 in both x and y, and velocity < 5
     """
     action_space = []
@@ -97,14 +107,15 @@ def get_action_space(state):
 
 def get_policy(obj: Racetrack, epsilon=0.1):
     """
-    takes in a StateSpace object and epsilon value,
-    returns an array with the same shape as the state space,
-    with the chosen action for each state according to the behavior policy as the elements.
+    takes in a Racetrack object and epsilon value,
+    returns an array with the same shape as the racetrack state space,
+    with the chosen action for each state according to the behavior policy as the elements' value.
     """
     state_values = obj.state_values
 
-    # use object array to store lists as elements (because there are two actions)
+    # use "object" type array to store lists as elements (because there are two actions)
     policy = np.empty(state_values.shape, dtype=object)
+    logger.debug("generating policy with epsilon = %d", epsilon)
     for x in range(state_values.shape[0]):
         for y in range(state_values.shape[1]):
             for vx in range(state_values.shape[2]):
@@ -187,21 +198,93 @@ class Episode:
             current_state = next_state
             # print(f"No crash at step {self.steps} at {current_state} with {action}")
             if self.steps > max_steps:  # to prevent infinite loop in case of bad policy
-                print(
-                    f"Episode generation stopped after {max_steps} steps to prevent infinite loop."
+                logger.debug(
+                    "Episode generation stopped after 10000000 steps to prevent infinite loop."
                 )
-                print(f"    Last state: {current_state}")
+                logger.debug(f"    Last state: {current_state}")
                 return False
-        print("Episode generated")
-        print(f"    Steps taken: {self.steps}")
+        logger.debug("Episode generated")
+        logger.debug(f"    Steps taken: {self.steps}")
         return True
 
     def __str__(self):
-        print(f"Episode steps: {self.steps}")
-        print(
+        logger.debug(f"Episode steps: {self.steps}")
+        logger.debug(
             f"Episode trajectory (first 3 steps): {self.episode[:3]}"
         )  # print first 3 steps of episode
-        print(
+        logger.debug(
             f"Episode trajectory (last 3 steps): {self.episode[-3:]}"
         )  # print last 3 steps of episode
         return f"Total steps generated: {self.steps}"
+    
+def build_track(og_racetrack):
+    racetrack = np.array([list(row) for row in og_racetrack])
+    track = np.ones(shape=(len(racetrack), len(racetrack[0])))
+    for row in range(len(racetrack)):
+        for column in range(len(racetrack[row])):
+            if racetrack[row][column] == "#":
+                track[row][column] = 0
+            elif racetrack[row][column] == "E":
+                track[row][column] = 0.4
+            elif racetrack[row][column] == "S":
+                track[row][column] = 0.6
+
+    return track
+
+
+def generate_routes_gif(Racetrack, race_track):
+    episode = Episode(Racetrack, Racetrack.target_policy_dict)
+    track = build_track(race_track)
+    # os.chdir(f'reinforcement_learning_programs/monte_carlo_methods/racetrack/oop_version')
+    gifs_dir = Path("racetrack_gifs")
+    shutil.rmtree(gifs_dir, ignore_errors=True)
+    gifs_dir.mkdir(exist_ok=True)
+    for each_start in range(len(Racetrack.start_coord_list)):
+        # shutil.rmtree(f"racetrack_gifs/racetrack_{each_start}", ignore_errors=True)
+        # os.mkdir(f'racetrack_gifs/racetrack_{each_start}')
+        images = []
+        episode.episode = []
+        episode.generate(Racetrack, start_pos=Racetrack.start_coord_list[each_start])
+        for step in range(len(episode.episode)):
+            track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
+                episode.episode[step][0][0]
+            ] = 0.2
+            plt.figure(figsize=(10, 10))
+            plt.imshow(track)
+            plt.title(
+                f"Racetrack with start location {Racetrack.start_coord_list[each_start]}",
+                fontsize=10,
+            )
+            output_dir = Path(gifs_dir / f"racetrack_{each_start}")
+            output_dir.mkdir(exist_ok=True)
+
+            plt.savefig(output_dir / f"Start-{each_start}-Step-{step}.png")
+            # plt.savefig(
+            #    f"racetrack_gifs/racetrack_{each_start}/Start-{each_start}-Step-{step}.png"
+            # )
+            image = Image.open(output_dir / f"Start-{each_start}-Step-{step}.png")
+            # image = Image.open(
+            #    f"racetrack_gifs/racetrack_{each_start}/Start-{each_start}-Step-{step}.png"
+            # )
+            images.append(image)
+            if (
+                race_track[
+                    len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]
+                ][episode.episode[step][0][0]]
+                == "S"
+            ):
+                track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
+                    episode.episode[step][0][0]
+                ] = 0.6
+            else:
+                track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
+                    episode.episode[step][0][0]
+                ] = 1
+        images[0].save(
+            output_dir
+            / f"Optimal_path_for_{Racetrack.start_coord_list[each_start]}.gif",
+            save_all=True,
+            append_images=images[1:],
+            duration=200,
+            loop=0,
+        )
