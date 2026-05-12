@@ -206,15 +206,8 @@ class Episode:
         return True
 
     def __str__(self):
-        logger.debug(f"Episode steps: {self.steps}")
-        logger.debug(
-            f"Episode trajectory (first 3 steps): {self.episode[:3]}"
-        )  # print first 3 steps of episode
-        logger.debug(
-            f"Episode trajectory (last 3 steps): {self.episode[-3:]}"
-        )  # print last 3 steps of episode
-        return f"Total steps generated: {self.steps}"
-    
+        return f"Episode(steps={self.steps})"
+   
 def build_track(og_racetrack):
     racetrack = np.array([list(row) for row in og_racetrack])
     track = np.ones(shape=(len(racetrack), len(racetrack[0])))
