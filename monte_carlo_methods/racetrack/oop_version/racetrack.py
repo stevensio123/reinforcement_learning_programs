@@ -190,7 +190,7 @@ def off_policy_control(
     while True:
         Episode.policy = behaviour_policy
         Episode.episode = []  # reset episode list
-        if Episode.generate(Racetrack) and (ep_generation_failed_attempt > max_failed_episode_generation_attempt):
+        if Episode.generate(Racetrack) and (ep_generation_failed_attempt < max_failed_episode_generation_attempt):
             episode_count += 1  # successful episode generated counter, seperated from the successful predictions
             if incremental_prediction(
                 Racetrack, Episode.episode, cum_is, epsilon, gamma
