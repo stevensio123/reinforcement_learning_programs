@@ -154,7 +154,8 @@ def off_policy_control(
         bar_format=pbar_format,
     )
     # start bar at initialized epsilon, scaled to 100 for better updates
-    pbar_epsilon.update(int(epsilon*100))
+    pbar_epsilon.n = int(epsilon * 100)
+    pbar_epsilon.refresh()
 
     # define progress bar for successful episode count
     pbar_overall = tqdm(
