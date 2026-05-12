@@ -1,12 +1,6 @@
-import numpy as np
 import logging
 import logging.config
-from tqdm import tqdm
 from pathlib import Path
-import racetrack_utils as utils
-
-# format for tqdm progress bar
-pbar_format = "{desc:<40}[{bar:50}] {percentage:3.0f}% | ETA {remaining}"
 
 log_dir = Path(__file__).resolve().parent
 
@@ -44,6 +38,14 @@ logging.config.dictConfig(
         # }
     }
 )
+
+import numpy as np
+from tqdm import tqdm
+import racetrack_utils as utils
+
+# format for tqdm progress bar
+pbar_format = "{desc:<40}[{bar:50}] {percentage:3.0f}% | ETA {remaining}"
+
 
 logger = logging.getLogger(__name__)
 
@@ -145,14 +147,14 @@ def off_policy_control(
 
     # define progress bar for epsilon value
     pbar_epsilon = tqdm(
-        total=1.00,
+        total=100,
         desc="current epsilon value for policy regeneration",
         position=0,
         leave=True,
         bar_format=pbar_format,
     )
-    # start bar at initialized epsilon
-    pbar_epsilon.update(0.1)
+    # start bar at initialized epsilon, scaled to 100 for better updates
+    pbar_epsilon.update(int(epsilon*100))
 
     # define progress bar for successful episode count
     pbar_overall = tqdm(
@@ -223,7 +225,7 @@ def off_policy_control(
                 )
                 if epsilon < 1:
                     epsilon += 0.01
-                    pbar_epsilon.update(0.01)
+                    pbar_epsilon.update(1)
                 else:
                     logger.info(
                         "epsilon value at maximum of 0.99, stopping off-policy control."
