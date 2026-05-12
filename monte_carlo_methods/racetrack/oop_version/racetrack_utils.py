@@ -16,7 +16,7 @@ class Racetrack:
         class to represent state space of racetrack.
         state value is initialized to random integer between -5 and 1 (inclusive) for each state.
         """
-        logger.info("creating racetrack with input: {}".format(racetrack))
+        logger.info("creating racetrack...")
         # reverse and transpose racetrack to match coordinate system (x rows, y rows)
         racetrack_reverse = racetrack[::-1]
         self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
@@ -52,14 +52,14 @@ class Racetrack:
 
     def get_state_value(self, state):
         x, y, vx, vy = state
-        logger.debug("getting state value of state: %d, %d, %d, %d", x, y, vx, vy)
+        # logger.debug("getting state value of state: %d, %d, %d, %d", x, y, vx, vy)
         return self.state_values[x, y, vx, vy]
         # equivalent to:
         # return self.state_values[x][y][vx][vy]
 
 
 def get_next_state(Racetrack, state, a):
-    logger.debug("getting next state of {}".format(state))
+    # logger.debug("getting next state of {}".format(state))
     x, y, vx, vy = state
     vx += a[0]
     vy += a[1]
@@ -70,15 +70,15 @@ def get_next_state(Racetrack, state, a):
         y = Racetrack.y_terminal_smallest_loc
     try:
         Racetrack.racetrack[x][y]
-        logger.debug("next state is %s", Racetrack.racetrack[x][y])
+        # logger.debug("next state is %s", Racetrack.racetrack[x][y])
     except IndexError:  # out of bounds
-        logger.debug("next state is out of bounds.")
+        # logger.debug("next state is out of bounds.")
         new_coord = Racetrack.start_coord_list[
             np.random.randint(len(Racetrack.start_coord_list))
         ]
         return (new_coord[0], new_coord[1], 0, 0)
     if Racetrack.racetrack[x][y] == "#":  # crash
-        logger.debug("car crashed, starting over.")
+        # logger.debug("car crashed, starting over.")
         new_coord = Racetrack.start_coord_list[
             np.random.randint(len(Racetrack.start_coord_list))
         ]
@@ -115,7 +115,7 @@ def get_policy(obj: Racetrack, epsilon=0.1):
 
     # use "object" type array to store lists as elements (because there are two actions)
     policy = np.empty(state_values.shape, dtype=object)
-    logger.debug("generating policy with epsilon = %d", epsilon)
+    # logger.debug("generating policy with epsilon = %d", epsilon)
     for x in range(state_values.shape[0]):
         for y in range(state_values.shape[1]):
             for vx in range(state_values.shape[2]):
@@ -198,17 +198,18 @@ class Episode:
             current_state = next_state
             # print(f"No crash at step {self.steps} at {current_state} with {action}")
             if self.steps > max_steps:  # to prevent infinite loop in case of bad policy
+                '''
                 logger.debug(
                     "Episode generation stopped after 10000000 steps to prevent infinite loop."
                 )
                 logger.debug(f"    Last state: {current_state}")
+                '''
                 return False
-        logger.debug("Episode generated")
-        logger.debug(f"    Steps taken: {self.steps}")
+        logger.debug("Episode generated with steps taken: %d", self.steps)
         return True
 
     def __str__(self):
-        logger.debug(f"Episode steps: {self.steps}")
+        logger.debug("Episode steps: %d", self.steps)
         logger.debug(
             f"Episode trajectory (first 3 steps): {self.episode[:3]}"
         )  # print first 3 steps of episode

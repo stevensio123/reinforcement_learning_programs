@@ -187,7 +187,7 @@ def off_policy_control(
             if incremental_prediction(
                 Racetrack, Episode.episode, cum_is, epsilon, gamma
             ):
-                logger.debug("incremental prediction successful")
+                logger.debug("Incremental prediction successful")
                 pbar_overall.update(1)  # update for pbar too
                 success_coord = (Episode.episode[-1][0][0], Episode.episode[-1][0][1])
                 # counter for starting state for this successful episode
@@ -197,8 +197,8 @@ def off_policy_control(
 
             else:
                 ep_generation_failed_attempt += 1  # general attempt counter
-                logger.debug("creating new behaviour policy with epsilon %.2f", epsilon)
-                behaviour_policy = utils.get_policy(Racetrack, epsilon)
+                logger.debug("Incremental prediction failedm retrying with updated policy...")
+                # behaviour_policy = utils.get_policy(Racetrack, epsilon)
                 continue
 
             if (min(successful_epi_dict.values()) >= min_successful_episode) and (
@@ -210,9 +210,8 @@ def off_policy_control(
                 return True
             
             logger.debug(
-                "Off-policy control successful at episode %d, with smallest success value: %d.",
+                "Off-policy control successful at episode %d",
                 episode_count,
-                min(successful_epi_dict.values())
             )
             behaviour_policy = utils.get_policy(Racetrack, epsilon)
             ep_generation_failed_attempt = 0
@@ -281,7 +280,7 @@ def main():
         epsilon=0.1,
         max_episode_count=10000,
         min_successful_episode=10,
-        max_failed_episode_generation_attempt=1000,
+        max_failed_episode_generation_attempt=10000,
         gamma=0.9,
     )
 
