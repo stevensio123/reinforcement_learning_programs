@@ -33,8 +33,9 @@ logging.config.dictConfig(
         },
         # this part only needed if want to customize logger in utils
         "loggers": {       
-            utils.__name__: {
+            "racetrack_utils": {
               "level": "INFO", # set to INFO to avoid too much logs from utils
+              "propagate": True, # propagate logs to root logger
           }
         }
     }
