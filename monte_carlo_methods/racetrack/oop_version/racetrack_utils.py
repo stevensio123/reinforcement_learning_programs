@@ -114,7 +114,7 @@ def get_policy(obj: Racetrack, epsilon=0.1):
 
     # use "object" type array to store lists as elements (because there are two actions)
     policy = np.empty(state_values.shape, dtype=object)
-    logger.info("generating policy with epsilon = %d", epsilon)
+    logger.info("generating policy with epsilon = %.2f", epsilon)
     for x in range(state_values.shape[0]):
         for y in range(state_values.shape[1]):
             for vx in range(state_values.shape[2]):
