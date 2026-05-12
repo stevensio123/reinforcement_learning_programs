@@ -2,7 +2,6 @@ import numpy as np
 import random
 import logging
 from PIL import Image
-# import os
 import shutil
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -115,7 +114,7 @@ def get_policy(obj: Racetrack, epsilon=0.1):
 
     # use "object" type array to store lists as elements (because there are two actions)
     policy = np.empty(state_values.shape, dtype=object)
-    logger.debug("generating policy with epsilon = %d", epsilon)
+    logger.info("generating policy with epsilon = %d", epsilon)
     for x in range(state_values.shape[0]):
         for y in range(state_values.shape[1]):
             for vx in range(state_values.shape[2]):
@@ -201,10 +200,9 @@ class Episode:
                 logger.debug(
                     "Episode generation stopped after 10000000 steps to prevent infinite loop."
                 )
-                logger.debug(f"    Last state: {current_state}")
+                logger.debug("Last state: %d, %d, %d, %d", *current_state)
                 return False
-        logger.debug("Episode generated")
-        logger.debug(f"    Steps taken: {self.steps}")
+        logger.info("Episode generated successfully in %d steps.", self.steps)
         return True
 
     def __str__(self):

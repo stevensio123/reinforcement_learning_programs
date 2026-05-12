@@ -32,10 +32,11 @@ logging.config.dictConfig(
             "handlers": ["console", "file"],  # logs to both console and file
         },
         # this part only needed if want to customize logger in utils
-        # "loggers": {    #   utils.__name__: {
-        #       "level": "DEBUG"
-        #   }
-        # }
+        "loggers": {       
+            utils.__name__: {
+              "level": "INFO", # set to INFO to avoid too much logs from utils
+          }
+        }
     }
 )
 
@@ -187,7 +188,7 @@ def off_policy_control(
             if incremental_prediction(
                 Racetrack, Episode.episode, cum_is, epsilon, gamma
             ):
-                logger.debug("incremental prediction successful")
+                logger.debug("incremental prediction successful, episode count: %d", episode_count)
                 pbar_overall.update(1)  # update for pbar too
                 success_coord = (Episode.episode[-1][0][0], Episode.episode[-1][0][1])
                 # counter for starting state for this successful episode
@@ -197,7 +198,7 @@ def off_policy_control(
 
             else:
                 ep_generation_failed_attempt += 1  # general attempt counter
-                logger.debug("creating new behaviour policy with epsilon %.2f", epsilon)
+                logger.debug("incremental prediction failed, episode count: %d", episode_count)
                 behaviour_policy = utils.get_policy(Racetrack, epsilon)
                 continue
 
