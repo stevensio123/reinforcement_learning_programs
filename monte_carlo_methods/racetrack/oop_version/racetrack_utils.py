@@ -16,19 +16,14 @@ class Racetrack:
         class to represent state space of racetrack.
         state value is initialized to random integer between -5 and 1 (inclusive) for each state.
         """
-        logger.info("creating racetrack with input: {}".format(racetrack))
+        logger.info("creating racetrack...")
         # reverse and transpose racetrack to match coordinate system (x rows, y rows)
         racetrack_reverse = racetrack[::-1]
         self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
 
-        """
-        self.state_values = np.random.randint(
-            -5, -2, size=(len(racetrack[0]), len(racetrack), 5, 5))
-        )
-        """
         rng = np.random.default_rng()
-        self.state_values = np.round(
-            rng.uniform(-5, -2, size=(len(racetrack[0]), len(racetrack), 5, 5)), 3
+        self.action_values = np.round(
+            rng.uniform(-5, -2, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)), 3
         )  # NEW added rounding to 3 d.p for more accurate rounding
 
         self.start_coord_list = []
@@ -37,7 +32,7 @@ class Racetrack:
             for j in range(len(self.racetrack[i])):
                 if self.racetrack[i][j] == "E":
                     self.terminal_coord_list.append((i, j))
-                    self.state_values[i][j] = 0
+                    self.action_values[i][j] = 0
                 if self.racetrack[i][j] == "S":
                     self.start_coord_list.append((i, j))
 
@@ -48,21 +43,22 @@ class Racetrack:
         self.y_terminal_smallest_loc = min(self.y_terminal_locs)
 
         # create target_policy actions that is greedy to best action
-        self.target_policy_dict = np.empty(self.state_values.shape, dtype=object)
+        self.target_policy_dict = np.empty((len(racetrack[0]), len(racetrack), 5, 5), dtype=object)
 
-    def get_state_value(self, state):
+    def get_action_value(self, state, action):
         x, y, vx, vy = state
-        logger.debug("getting state value of state: %d, %d, %d, %d", x, y, vx, vy)
-        return self.state_values[x, y, vx, vy]
+        ax, ay = action
+        # logger.debug("getting state value of state: %d, %d, %d, %d", x, y, vx, vy)
+        return self.action_values[x, y, vx, vy, ax, ay]
         # equivalent to:
-        # return self.state_values[x][y][vx][vy]
+        # return self.action_values[x][y][vx][vy][ax][ay]
 
 
-def get_next_state(Racetrack, state, a):
-    logger.debug("getting next state of {}".format(state))
+def get_next_state(Racetrack, state, action):
+    # logger.debug("getting next state of {}".format(state))
     x, y, vx, vy = state
-    vx += a[0]
-    vy += a[1]
+    vx += action[0]
+    vy += action[1]
     x += vx
     y += vy
     if Racetrack.x_terminal_loc <= x and Racetrack.y_terminal_smallest_loc <= y:
@@ -70,15 +66,15 @@ def get_next_state(Racetrack, state, a):
         y = Racetrack.y_terminal_smallest_loc
     try:
         Racetrack.racetrack[x][y]
-        logger.debug("next state is %s", Racetrack.racetrack[x][y])
+        # logger.debug("next state is %s", Racetrack.racetrack[x][y])
     except IndexError:  # out of bounds
-        logger.debug("next state is out of bounds.")
+        # logger.debug("next state is out of bounds.")
         new_coord = Racetrack.start_coord_list[
             np.random.randint(len(Racetrack.start_coord_list))
         ]
         return (new_coord[0], new_coord[1], 0, 0)
     if Racetrack.racetrack[x][y] == "#":  # crash
-        logger.debug("car crashed, starting over.")
+        # logger.debug("car crashed, starting over.")
         new_coord = Racetrack.start_coord_list[
             np.random.randint(len(Racetrack.start_coord_list))
         ]
@@ -111,19 +107,17 @@ def get_policy(obj: Racetrack, epsilon=0.1):
     returns an array with the same shape as the racetrack state space,
     with the chosen action for each state according to the behavior policy as the elements' value.
     """
-    state_values = obj.state_values
+    action_values = obj.action_values
 
     # use "object" type array to store lists as elements (because there are two actions)
-    policy = np.empty(state_values.shape, dtype=object)
-    logger.debug("generating policy with epsilon = %d", epsilon)
-    for x in range(state_values.shape[0]):
-        for y in range(state_values.shape[1]):
-            for vx in range(state_values.shape[2]):
-                for vy in range(state_values.shape[3]):
+    policy = np.empty((len(obj.racetrack), len(obj.racetrack[0]), 5, 5), dtype=object)
+    # logger.debug("generating policy with epsilon = %d", epsilon)
+    for x in range(action_values.shape[0]):
+        for y in range(action_values.shape[1]):
+            for vx in range(action_values.shape[2]):
+                for vy in range(action_values.shape[3]):
                     state = (x, y, vx, vy)
-                    # print(state)
                     # choose optimal / random action:
-                    # print(f"{obj.racetrack[x][y]}")
                     action_space_ls = get_action_space(state)
                     if random.random() > epsilon:
                         # take optimal action according to current state values
@@ -136,19 +130,25 @@ def get_policy(obj: Racetrack, epsilon=0.1):
     return policy
 
 
-def get_optimal_action(Racetrack, state, action_space_ls):
+def get_optimal_action(Racetrack, state, action_space_ls, step_action=None):
     """
     takes in a StateSpace object and epsilon value,
     returns an array with the same shape as the state space,
     with the chosen action for each state according to the behavior policy as the elements.
     """
-    state_values = Racetrack.state_values
+    action_values = Racetrack.action_values
     action_values = []
-    for action in action_space_ls:
-        next_state_idx = get_next_state(Racetrack, state, action)
-        next_state_value = state_values[next_state_idx]
-        action_values.append(next_state_value)
-    action_idx = np.where(action_values == np.max(action_values))[0][-1]
+    for idx, action in enumerate(action_space_ls):
+        action_value = Racetrack.get_action_value(state, action)
+        action_values.append(action_value)
+        if step_action == action:
+            policy_action_idx = idx
+            policy_action_value = action_value
+    # action_idx = np.where(action_values == np.max(action_values))[0][-1] picking the movement that drives the farthest
+    action_idx = random.choice(np.where(action_values == np.max(action_values))[0])
+    if step_action != None:  
+        if policy_action_value == np.max(action_values): # else left blank so if condition not satisfied, old action_idx is kept
+            action_idx = policy_action_idx
     # print(f"largest state value = {np.max(action_values)}")
     return action_idx
 
@@ -198,17 +198,18 @@ class Episode:
             current_state = next_state
             # print(f"No crash at step {self.steps} at {current_state} with {action}")
             if self.steps > max_steps:  # to prevent infinite loop in case of bad policy
+                '''
                 logger.debug(
                     "Episode generation stopped after 10000000 steps to prevent infinite loop."
                 )
                 logger.debug(f"    Last state: {current_state}")
+                '''
                 return False
-        logger.debug("Episode generated")
-        logger.debug(f"    Steps taken: {self.steps}")
+        logger.debug("Episode generated with steps taken: %d", self.steps)
         return True
 
     def __str__(self):
-        logger.debug(f"Episode steps: {self.steps}")
+        logger.debug("Episode steps: %d", self.steps)
         logger.debug(
             f"Episode trajectory (first 3 steps): {self.episode[:3]}"
         )  # print first 3 steps of episode
