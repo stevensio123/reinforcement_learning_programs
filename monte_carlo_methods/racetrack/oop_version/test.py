@@ -39,6 +39,15 @@ codes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO]
     os.chdir('..')"""
 
 def main():
+    race_track = ["##NNNNNNNNEEE######",
+                "##NNNNNNNNEEE######",
+                "##NNNNNNNN#########",
+                "###NNNNNNN#########",
+                "###NNNNNNN#########",
+                "####SSSSSS#########"
+                ]
+
+
     print("\nTEST: racetrack object")
     racetrack = utils.Racetrack(race_track)
     print(f"racetrack list (cartesian):{racetrack.racetrack}")
@@ -63,9 +72,13 @@ def main():
 
     print("\nTEST: action space function")
     state = (0,2,0,0)
-    print(f"Action space for {state}: {utils.get_action_space(state)}")
+    action_ls_1 = utils.get_action_space(state)
+    print(f"Action space for {state}: {action_ls_1}")
+    print(f"Optimal action for {state}: {utils.get_optimal_action(racetrack, state, action_ls_1)}")
     state = (0,2,4,4)
-    print(f"Action space for {state}: {utils.get_action_space(state)}")
+    action_ls_1 = utils.get_action_space(state)
+    print(f"Action space for {state}: {action_ls_1}")
+    print(f"Optimal action for {state}: {utils.get_optimal_action(racetrack, state, action_ls_1, step_action=[-1,0])}")
 
     print("\nTEST: state space class")
     print(f"State values shape: {racetrack.state_values.shape}")
