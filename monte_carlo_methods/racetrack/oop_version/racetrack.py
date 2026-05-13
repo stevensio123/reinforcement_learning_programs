@@ -58,6 +58,7 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
     epsilon : prob. of choosing random action. Used to compute b(A|S), the probability of action given state in the behaviour policy.
     gamma : the weight parameter used on the rewards.
     """
+    logger.debug("starting incremental prediction for episode with length %d", len(episode))
     episode.reverse()
     g = 0
     w = 1
@@ -70,7 +71,7 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
         cum_is[x, y, v1, v2, a1, a2] += w
 
         logger.debug(
-            "step t-%d coordinate: (%d, %d, %d, %d) with action: (%d, %d)",
+            "step T-%d coordinate: (%d, %d, %d, %d) with action: (%d, %d)",
             step,
             x,
             y,
@@ -105,7 +106,7 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
         # compare if target_policy action matches current action taken
         if Racetrack.target_policy_dict[x][y][v1][v2] != episode[step][1]:
             logger.debug(
-                "behaviour policy action and target policy action at step %d mismatch | current action (%d, %d) value = %.3f expected action (%d, %d) value = %.3f",
+                "incremental prediction Failure: behaviour policy action and target policy action at step T-%d mismatch:  current action (%d, %d) value = %.3f | expected action (%d, %d) value = %.3f",
                 step,
                 episode[step][1][0], # episode action
                 episode[step][1][1], # ''
@@ -118,7 +119,7 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
 
         # update importance sampling ratio
         w = w / ((1 - epsilon) + (epsilon / len(action_space_ls)))
-        logger.debug("importance sampling weight W = %d at step %d", w, step)
+        logger.debug("importance sampling weight W = %d at step T-%d", w, step)
 
     return True
 
