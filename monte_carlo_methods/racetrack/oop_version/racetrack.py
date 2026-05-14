@@ -127,14 +127,14 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
 def off_policy_control(
         Racetrack,
         epsilon,
-        max_episode_count,
+        max_successful_episode,
         min_successful_episode,
         max_failed_episode_generation_attempt,
         gamma,
     ):
     """
     Racetrack: Racetrack object from utils.
-    max_episode_count: determines the maximum amount of successful episodes needed to be generated.
+    max_successful_episode: determines the maximum amount of successful episodes needed to be generated.
     min_successful_episode: determines the minimum amount of successful episodes generated for each starting positions.
     max_episode_generation_attempt: determines the maximum amount of any episode generated (success or failure).
     """
@@ -179,7 +179,7 @@ def off_policy_control(
 
     # define progress bar for successful episode count
     pbar_overall = tqdm(
-        total=max_episode_count,
+        total=max_successful_episode,
         desc="successful incremental prediction runs",
         position=2,
         leave=True,
@@ -231,7 +231,7 @@ def off_policy_control(
             - reset failure ep counter and bar for new policy
             """
             if (min(successful_epi_dict.values()) >= min_successful_episode) and (
-                success_ep_counter >= max_episode_count
+                success_ep_counter >= max_successful_episode
             ):
                 logger.info(
                     "off-policy control achieved minimum successful episodes for each starting location, ending run..."
@@ -321,7 +321,7 @@ def main():
     MC_control_result = off_policy_control(
         Racetrack=race_track_obj,
         epsilon=0.1,
-        max_episode_count=10000,
+        max_successful_episode=10000,
         min_successful_episode=10,
         max_failed_episode_generation_attempt=5000,
         gamma=0.9,
