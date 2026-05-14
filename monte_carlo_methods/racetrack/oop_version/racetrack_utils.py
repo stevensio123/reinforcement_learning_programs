@@ -1,10 +1,50 @@
 import numpy as np
 import random
 import logging
+import logging.config
 from PIL import Image
 import shutil
 import matplotlib.pyplot as plt
 from pathlib import Path
+
+log_dir = Path(__file__).resolve().parent
+
+formatter = logging.Formatter()
+logging.config.dictConfig(
+    {
+        "version": 1,
+        "formatters": {
+            "standard": {
+                "format": "%(asctime)s | %(name)s - %(levelname)s | %(message)s"
+            }
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "standard",
+                "level": "WARNING",  # setting to INFO / DEBUG causes conflicts with displaying tqdm progress bars
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": f"{log_dir}/racetrack.log",
+                "formatter": "standard",
+                "level": "DEBUG",
+                "mode": "w",  # write or replace log file
+            },
+        },
+        "root": {
+            "level": "DEBUG",
+            "handlers": ["console", "file"],  # logs to both console and file
+        },
+        # this part only needed if want to customize logger in utils
+        "loggers": {
+            "racetrack_utils": {
+                "level": "INFO",  # set to INFO to avoid too much logs from utils
+            }
+        },
+    }
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +62,10 @@ class Racetrack:
 
         rng = np.random.default_rng()
         self.action_values = np.round(
-           np.zeros(shape=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)),2
-           # rng.uniform(-1, 0, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)), 2
-        ) 
+            np.zeros(shape=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)),
+            2,
+            # rng.uniform(-1, 0, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)), 2
+        )
 
         self.start_coord_list = []
         self.terminal_coord_list = []
@@ -43,7 +84,9 @@ class Racetrack:
         self.y_terminal_smallest_loc = min(self.y_terminal_locs)
 
         # create target_policy actions that is greedy to best action
-        self.target_policy_dict = np.empty((len(racetrack[0]), len(racetrack), 5, 5), dtype=object)
+        self.target_policy_dict = np.empty(
+            (len(racetrack[0]), len(racetrack), 5, 5), dtype=object
+        )
 
     def get_action_value(self, state, action):
         x, y, vx, vy = state
@@ -111,7 +154,7 @@ def get_policy(obj: Racetrack, epsilon=0.1):
 
     # empty array of same shape as state space (x, y, vx, vy) with action as element value
     # use "object" type array to store lists as elements (because there are two actions)
-    policy = np.empty((len(obj.racetrack), len(obj.racetrack[0]), 5, 5), dtype=object) 
+    policy = np.empty((len(obj.racetrack), len(obj.racetrack[0]), 5, 5), dtype=object)
     # logger.debug("generating policy with epsilon = %d", epsilon)
     for x in range(action_values.shape[0]):
         for y in range(action_values.shape[1]):
@@ -130,6 +173,7 @@ def get_policy(obj: Racetrack, epsilon=0.1):
                         policy[x][y][vx][vy] = action_space_ls[action_idx]
     return policy
 
+
 def get_optimal_action(Racetrack, state, action_space_ls, step_action=None):
     """
     takes in a StateSpace object and epsilon value,
@@ -141,7 +185,7 @@ def get_optimal_action(Racetrack, state, action_space_ls, step_action=None):
     for idx, action in enumerate(action_space_ls):
         action_value = Racetrack.get_action_value(state, action)
         action_values.append(action_value)
-        if step_action == action: 
+        if step_action == action:
             """
             check if actual action taken in episode is equal to current action in the loop, 
             if so, store the action value and index of that action to compare with optimal action value later
@@ -150,8 +194,10 @@ def get_optimal_action(Racetrack, state, action_space_ls, step_action=None):
             policy_action_value = action_value
     # if multiple actions have the same action value, randomly pick one of them as the optimal action
     action_idx = random.choice(np.where(action_values == np.max(action_values))[0])
-    if step_action != None:  
-        if policy_action_value == np.max(action_values): # else left blank so if condition not satisfied, old action_idx is kept
+    if step_action != None:
+        if policy_action_value == np.max(
+            action_values
+        ):  # else left blank so if condition not satisfied, old action_idx is kept
             """
             if the action taken in the episode is one of the optimal actions, 
             then we later use this to update the policy to keep that action as optimal, 
@@ -217,7 +263,8 @@ class Episode:
 
     def __str__(self):
         return f"Episode(steps={self.steps})"
-   
+
+
 def build_track(og_racetrack):
     racetrack = np.array([list(row) for row in og_racetrack])
     track = np.ones(shape=(len(racetrack), len(racetrack[0])))
@@ -231,6 +278,7 @@ def build_track(og_racetrack):
                 track[row][column] = 0.6
 
     return track
+
 
 def generate_routes_gif(Racetrack, race_track):
     episode = Episode(Racetrack, Racetrack.target_policy_dict)
