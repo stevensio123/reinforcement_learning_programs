@@ -103,7 +103,7 @@ def get_action_space(state):
 def get_policy(obj: Racetrack, epsilon=0.1):
     """
     takes in a Racetrack object and epsilon value,
-    returns an array with the same shape as the racetrack state space,
+    returns an array with the same shape as the racetrack state space
     with the chosen action for each state according to the behavior policy as the elements' value.
     """
     action_values = obj.action_values
