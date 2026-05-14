@@ -194,6 +194,7 @@ def off_policy_control(
                     failed_attempt_ep_counter,
                 )
                 behaviour_policy = utils.get_policy(Racetrack, epsilon)
+                failed_attempt_ep_counter += 1
                 pbar_failed_attempt_ep_count.update(1)
                 pbar_failed_attempt_ep_count.refresh()
                 continue
