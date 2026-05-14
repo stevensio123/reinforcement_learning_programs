@@ -294,11 +294,11 @@ def main():
         epsilon=0.1,
         max_successful_episode=10000,
         min_successful_episode=10,
-        max_failed_episode_generation_attempt=5000,
+        max_failed_episode_generation_attempt=1000,
         gamma=0.9,
     )
 
-    if MC_control_result == True:
+    if MC_control_result:
         utils.generate_routes_gif(race_track_obj, race_track)
     else:
         tqdm.write("Policy failed, ending algorithm.")
