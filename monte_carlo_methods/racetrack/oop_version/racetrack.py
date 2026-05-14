@@ -24,7 +24,7 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
     episode.reverse()
     g = 0
     w = 1
-    for step in range(len(episode) - 1):
+    for step in range(len(episode)):
         # g already accounts for reward -1 for each step
         # step += 1   # no need to skip it since episode generation did not include T step
         g = (gamma * g) - 1

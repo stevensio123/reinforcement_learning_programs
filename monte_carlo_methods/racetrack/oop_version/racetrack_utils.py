@@ -60,7 +60,7 @@ class Racetrack:
         racetrack_reverse = racetrack[::-1]
         self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
 
-        rng = np.random.default_rng()
+        # rng = np.random.default_rng()
         self.action_values = np.round(
             np.zeros(shape=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)),
             2,
@@ -244,8 +244,16 @@ class Episode:
             if current_loc in Racetrack.terminal_coord_list:
                 break
             elif action == None:
-                self.episode.append((current_state, [0, 0]))
-                break
+                logger.warning(
+                    "no action found for state(%d,%d,%d,%d), cancelling episode generation",
+                    x,
+                    y,
+                    vx,
+                    vy,
+                )
+                return False
+                # self.episode.append((current_state, [0, 0]))
+                # break
             next_state = get_next_state(Racetrack, current_state, action)
             current_loc = (next_state[0], next_state[1])
             self.steps += 1
