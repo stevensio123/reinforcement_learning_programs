@@ -22,8 +22,9 @@ class Racetrack:
 
         rng = np.random.default_rng()
         self.action_values = np.round(
-            rng.uniform(-5, -2, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)), 3
-        )  # NEW added rounding to 3 d.p for more accurate rounding
+           np.zeros(shape=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)),2
+           # rng.uniform(-1, 0, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)), 2
+        ) 
 
         self.start_coord_list = []
         self.terminal_coord_list = []

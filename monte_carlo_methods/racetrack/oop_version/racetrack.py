@@ -275,12 +275,8 @@ def off_policy_control(
                 failed_attempt_ep_counter = 0
                 pbar_failed_attempt_ep_count.reset()
                 pbar_failed_attempt_ep_count.refresh()
-            else:
-                logger.debug(
-                    "episode generation reached max step, generation failed for a total of %d times",
-                    failed_attempt_ep_counter,
-                )
-            logger.debug("creating new behaviour policy with epsilon %.2f", epsilon)
+            
+            # logger.debug("creating new behaviour policy with epsilon %.2f", epsilon)
             behaviour_policy = utils.get_policy(Racetrack, epsilon)
 
 def main():
