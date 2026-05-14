@@ -64,7 +64,7 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
     w = 1
     for step in range(len(episode) - 1):
         # g already accounts for reward -1 for each step
-        step += 1
+        # step += 1   # no need to skip it since episode generation did not include T step
         g = (gamma * g) - 1
         x, y, v1, v2 = episode[step][0]  # state
         a1, a2 = episode[step][1]  # action
@@ -219,7 +219,7 @@ def off_policy_control(
                     pbar_starts[(success_coord)].update(1)
 
             else:
-                logger.debug("Incremental prediction failed at generation attempt %d. Retrying with updated policy...", failed_attempt_ep_counter)
+                logger.info("Incremental prediction failed at generation attempt %d. Retrying with updated policy...", failed_attempt_ep_counter)
                 behaviour_policy = utils.get_policy(Racetrack, epsilon)
                 # pbar_failed_attempt_ep_count.refresh()
                 continue
