@@ -79,9 +79,8 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
                     episode[step][0], Racetrack.target_policy_dict[x][y][v1][v2]
                 ),  # target policy action value
             )
-            # instead of return False and go to next episode, why not continue to next step and continue prediction?
-            # so if we go from T-1 (mismatch step) to T-2 (match step), then we update w, but we would not update w otherwise
-            break
+
+            return False
 
         # update importance sampling ratio
         w = w / ((1 - epsilon) + (epsilon / len(action_space_ls)))
