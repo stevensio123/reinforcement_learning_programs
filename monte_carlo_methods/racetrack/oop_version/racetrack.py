@@ -105,7 +105,7 @@ def off_policy_control(
     cum_is = np.zeros(
         (len(Racetrack.racetrack), len(Racetrack.racetrack[0]), 5, 5, 3, 3), int
     )
-    behaviour_policy = utils.get_policy(Racetrack, epsilon)
+    # behaviour_policy = utils.get_policy(Racetrack, epsilon)
 
     attempted_ep_counter = 0  # count for any attempt to generate episode
     failed_attempt_ep_counter = 0  # failed episodes for attempted episode generation
@@ -118,7 +118,7 @@ def off_policy_control(
     successful_epi_dict = dict(
         zip(Racetrack.start_coord_list, success_ep_state_counter)
     )
-    Episode = utils.Episode(Racetrack, behaviour_policy)
+    Episode = utils.Episode(Racetrack)
     logger.info("starting off-policy control")
     # tqdm.write("starting off-policy control")
 
@@ -167,7 +167,6 @@ def off_policy_control(
     }
 
     while True:
-        Episode.policy = behaviour_policy
         Episode.episode = []  # reset episode list
         if Episode.generate(Racetrack) and (
             failed_attempt_ep_counter < max_failed_episode_generation_attempt
@@ -191,7 +190,7 @@ def off_policy_control(
                     "Incremental prediction failed at generation attempt %d. Retrying with updated policy...",
                     failed_attempt_ep_counter,
                 )
-                behaviour_policy = utils.get_policy(Racetrack, epsilon)
+                # behaviour_policy = utils.get_policy(Racetrack, epsilon)
                 failed_attempt_ep_counter += 1
                 pbar_failed_attempt_ep_count.update(1)
                 pbar_failed_attempt_ep_count.refresh()
@@ -220,7 +219,7 @@ def off_policy_control(
                 attempted_ep_counter,
             )
 
-            behaviour_policy = utils.get_policy(Racetrack, epsilon)
+            # behaviour_policy = utils.get_policy(Racetrack, epsilon)
             failed_attempt_ep_counter = 0
             pbar_failed_attempt_ep_count.reset()
             pbar_failed_attempt_ep_count.refresh()
@@ -255,7 +254,7 @@ def off_policy_control(
                 pbar_failed_attempt_ep_count.refresh()
 
             # logger.debug("creating new behaviour policy with epsilon %.2f", epsilon)
-            behaviour_policy = utils.get_policy(Racetrack, epsilon)
+            # behaviour_policy = utils.get_policy(Racetrack, epsilon)
 
 
 def main():

@@ -221,7 +221,7 @@ class Episode:
     episode is stored as a list of tuples of: (state, action) pairs.
     """
 
-    def __init__(self, Racetrack, policy):
+    def __init__(self, Racetrack):
         """
         policy: a 4D array that has an action for each state (x, y, vx, vy)
         super().__init__(racetrack)
@@ -229,12 +229,13 @@ class Episode:
         # start_loc: randomly chosen starting coordinate
         self.terminal_locs = Racetrack.terminal_coord_list  # Moved to init as useful
         self.episode = []
-        self.policy = policy
+        
 
-    def generate(self, Racetrack, max_steps=100, start_pos=None):
+    def generate(self, Racetrack, epsilon, max_steps=100, start_pos=None):
         """
         method to create episode by following the policy until it reaches terminal state.
         """
+        self.policy = get_policy(Racetrack, epsilon)
         if start_pos == None:
             current_loc = Racetrack.start_coord_list[
                 np.random.randint(len(Racetrack.start_coord_list))
