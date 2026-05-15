@@ -60,10 +60,10 @@ class Racetrack:
         racetrack_reverse = racetrack[::-1]
         self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
 
-        """
+        
         rng = np.random.default_rng()
         self.action_values = np.round(
-            rng.uniform(-5, -2, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)), 3
+            rng.uniform(-6, -3, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)), 3
         )  # NEW added rounding to 3 d.p for more accurate rounding
         # rng = np.random.default_rng()
         """
@@ -72,6 +72,7 @@ class Racetrack:
             2,
             # rng.uniform(-1, 0, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)), 2
         )
+        """
 
         self.start_coord_list = []
         self.terminal_coord_list = []
@@ -150,6 +151,7 @@ def get_action_space(state):
     return action_space
 
 
+# Not needed but being kept just in case
 def get_policy(obj: Racetrack, epsilon=0.1):
     """
     takes in a Racetrack object and epsilon value,
@@ -235,7 +237,6 @@ class Episode:
         """
         method to create episode by following the policy until it reaches terminal state.
         """
-        self.policy = get_policy(Racetrack, epsilon)
         if start_pos == None:
             current_loc = Racetrack.start_coord_list[
                 np.random.randint(len(Racetrack.start_coord_list))
@@ -247,7 +248,15 @@ class Episode:
 
         while True:
             x, y, vx, vy = current_state
-            action = self.policy[x][y][vx][vy]
+            action_space_ls = get_action_space(current_state)
+            if random.random() > epsilon:
+                # take optimal action according to current state values
+                action_idx = get_optimal_action(Racetrack, current_state, action_space_ls)
+                action = action_space_ls[action_idx]
+            else:
+                # take random action
+                action_idx = np.random.randint(len(action_space_ls))
+                action = action_space_ls[action_idx]
             if current_loc in Racetrack.terminal_coord_list:
                 break
             elif action == None:
@@ -259,14 +268,11 @@ class Episode:
                     vy,
                 )
                 return False
-                # self.episode.append((current_state, [0, 0]))
-                # break
             next_state = get_next_state(Racetrack, current_state, action)
             current_loc = (next_state[0], next_state[1])
             self.steps += 1
             self.episode.append((current_state, action))
             current_state = next_state
-            # print(f"No crash at step {self.steps} at {current_state} with {action}")
             if self.steps > max_steps:  # to prevent infinite loop in case of bad policy
                 logger.debug("Last state: %d, %d, %d, %d", *current_state)
                 return False

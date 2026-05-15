@@ -90,8 +90,7 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
 def off_policy_control(
     Racetrack,
     epsilon,
-    max_successful_episode,
-    min_successful_episode,
+    minumum_episode_requirement,
     max_failed_episode_generation_attempt,
     gamma,
 ):
@@ -106,6 +105,8 @@ def off_policy_control(
         (len(Racetrack.racetrack), len(Racetrack.racetrack[0]), 5, 5, 3, 3), int
     )
     # behaviour_policy = utils.get_policy(Racetrack, epsilon)
+
+    pbar_starts_max = 1000
 
     attempted_ep_counter = 0  # count for any attempt to generate episode
     failed_attempt_ep_counter = 0  # failed episodes for attempted episode generation
@@ -123,6 +124,7 @@ def off_policy_control(
     # tqdm.write("starting off-policy control")
 
     # define progress bar for failed generation attempts value
+    """
     pbar_failed_attempt_ep_count = tqdm(
         total=max_failed_episode_generation_attempt,
         desc="failed episode generation attempts (resets for any new policy)",
@@ -131,6 +133,7 @@ def off_policy_control(
         bar_format=pbar_format,
         mininterval=1,
     )
+    """
 
     # define progress bar for epsilon value
     pbar_epsilon = tqdm(
@@ -144,19 +147,22 @@ def off_policy_control(
     pbar_epsilon.n = epsilon
     pbar_epsilon.refresh()
 
-    # define progress bar for successful episode count
+    # define progress bar for total episodes generated count
     pbar_overall = tqdm(
-        total=max_successful_episode,
-        desc="successful incremental prediction runs",
+        total=minumum_episode_requirement,
+        desc="episodes generated",
         position=2,
         leave=True,
         bar_format=pbar_format,
     )
 
+    pbar_overall.reset()
+    pbar_overall.refresh()
+
     # define progress bars for successful episode's start state count, bars are a dict, so values are accessed from the key (state coord)
     pbar_starts = {
         coord: tqdm(
-            total=min_successful_episode,
+            total=pbar_starts_max,
             desc=f"episode success for start coord {coord}",
             # mininterval=1,
             position=i+ 3,  # +3 because failed attempts, epsilon and inc.pred. successes take up position 0, 1, 2
@@ -168,21 +174,20 @@ def off_policy_control(
 
     while True:
         Episode.episode = []  # reset episode list
-        if Episode.generate(Racetrack) and (
-            failed_attempt_ep_counter < max_failed_episode_generation_attempt
-        ):
+        if Episode.generate(Racetrack, epsilon):
             attempted_ep_counter += 1
             generated_ep_counter += 1
+            if pbar_overall.n <= minumum_episode_requirement:
+                pbar_overall.update(1)  # update for pbar too
             if incremental_prediction(
                 Racetrack, Episode.episode, cum_is, epsilon, gamma
             ):
                 success_ep_counter += 1  # successful ep for incremental prediction
                 logger.info("Incremental prediction successful")
-                pbar_overall.update(1)  # update for pbar too
                 success_coord = (Episode.episode[-1][0][0], Episode.episode[-1][0][1])
                 # counter for starting state for this successful episode
                 successful_epi_dict[(success_coord)] += 1
-                if pbar_starts[(success_coord)].n < min_successful_episode:
+                if pbar_starts[(success_coord)].n < pbar_starts_max:
                     pbar_starts[(success_coord)].update(1)
 
             else:
@@ -192,8 +197,8 @@ def off_policy_control(
                 )
                 # behaviour_policy = utils.get_policy(Racetrack, epsilon)
                 failed_attempt_ep_counter += 1
-                pbar_failed_attempt_ep_count.update(1)
-                pbar_failed_attempt_ep_count.refresh()
+                # pbar_failed_attempt_ep_count.update(1)
+                # pbar_failed_attempt_ep_count.refresh()
                 continue
 
             """
@@ -202,8 +207,7 @@ def off_policy_control(
             - update behavior policy with new epsilon if failed ep count reached max
             - reset failure ep counter and bar for new policy
             """
-            if (min(successful_epi_dict.values()) >= min_successful_episode) and (
-            success_ep_counter >= max_successful_episode):
+            if generated_ep_counter >= minumum_episode_requirement:
                 logger.info(
                     "off-policy control achieved minimum successful episodes for each starting location, ending run..."
                 )
@@ -221,8 +225,8 @@ def off_policy_control(
 
             # behaviour_policy = utils.get_policy(Racetrack, epsilon)
             failed_attempt_ep_counter = 0
-            pbar_failed_attempt_ep_count.reset()
-            pbar_failed_attempt_ep_count.refresh()
+            # pbar_failed_attempt_ep_count.reset()
+            # pbar_failed_attempt_ep_count.refresh()
         else:
             """
             unsuccessful episode generation, either due to reaching max step count or failure in generating episode.
@@ -232,6 +236,8 @@ def off_policy_control(
             """
             attempted_ep_counter += 1
             failed_attempt_ep_counter += 1
+            """
+            Removed to prevent epsilon increase
             pbar_failed_attempt_ep_count.update(1)
             if failed_attempt_ep_counter > max_failed_episode_generation_attempt:
                 logger.debug(
@@ -255,7 +261,7 @@ def off_policy_control(
 
             # logger.debug("creating new behaviour policy with epsilon %.2f", epsilon)
             # behaviour_policy = utils.get_policy(Racetrack, epsilon)
-
+            """
 
 def main():
     race_track = [
@@ -291,20 +297,24 @@ def main():
     ]
 
     race_track_obj = utils.Racetrack(race_track)
+    max_MC_control_attempt = 0
 
-    MC_control_result = off_policy_control(
-        Racetrack=race_track_obj,
-        epsilon=0.1,
-        max_successful_episode=10000,
-        min_successful_episode=10,
-        max_failed_episode_generation_attempt=5000,
-        gamma=0.9,
-    )
+    while True:
+        max_MC_control_attempt += 1
+        if max_MC_control_attempt > 5:
+            break
+        MC_control_result = off_policy_control(
+            Racetrack=race_track_obj,
+            epsilon=0.1,
+            minumum_episode_requirement=100000,
+            max_failed_episode_generation_attempt=20000,
+            gamma=0.9,
+        )
 
-    if MC_control_result:
-        utils.generate_routes_gif(race_track_obj, race_track)
-    else:
-        tqdm.write("Policy failed, ending algorithm.")
+        if MC_control_result:
+            utils.generate_routes_gif(race_track_obj, race_track)
+        else:
+            logger.debug("Policy failed for this attempt.")
 
 
 if __name__ == "__main__":
