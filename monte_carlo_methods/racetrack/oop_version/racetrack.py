@@ -34,7 +34,7 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
 
         logger.debug(
             "step T-%d coordinate: (%d, %d, %d, %d) with action: (%d, %d)",
-            step,
+            step + 1,  # so it writes T-1 for the last instead of T-0
             x,
             y,
             v1,
