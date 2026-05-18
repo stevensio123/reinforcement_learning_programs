@@ -157,8 +157,13 @@ def off_policy_control(
         )
         for i, coord in enumerate(Racetrack.start_coord_list)
     }
-    # pbar_overall.reset()
-    # pbar_overall.refresh()
+
+    # helper function to close all pbars after algorithm ends
+    def close_pbars():
+        pbar_epsilon.close()
+        pbar_overall.close()
+        for pbar in pbar_starts.values():
+            pbar.close()
 
     while True:
         Episode.episode = []  # reset episode list
@@ -206,6 +211,7 @@ def off_policy_control(
                     attempted_ep_counter,
                     epsilon,
                 )
+                close_pbars()
                 return True
 
             else:
@@ -236,6 +242,7 @@ def off_policy_control(
                             "epsilon value reached maximum of 1, stopping off-policy control."
                         )
                         tqdm.write("something is wrong.")
+                        close_pbars()
                         return False
 
 
