@@ -60,10 +60,12 @@ class Racetrack:
         racetrack_reverse = racetrack[::-1]
         self.racetrack = np.array([list(row) for row in racetrack_reverse]).T
 
-        
         rng = np.random.default_rng()
         self.action_values = np.round(
-            rng.uniform(-6, -3, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)), 3
+            rng.uniform(
+                -6, -3, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)
+            ),
+            3,
         )  # NEW added rounding to 3 d.p for more accurate rounding
         # rng = np.random.default_rng()
         """
@@ -231,7 +233,6 @@ class Episode:
         # start_loc: randomly chosen starting coordinate
         self.terminal_locs = Racetrack.terminal_coord_list  # Moved to init as useful
         self.episode = []
-        
 
     def generate(self, Racetrack, epsilon, max_steps=100, start_pos=None):
         """
@@ -251,7 +252,9 @@ class Episode:
             action_space_ls = get_action_space(current_state)
             if random.random() > epsilon:
                 # take optimal action according to current state values
-                action_idx = get_optimal_action(Racetrack, current_state, action_space_ls)
+                action_idx = get_optimal_action(
+                    Racetrack, current_state, action_space_ls
+                )
                 action = action_space_ls[action_idx]
             else:
                 # take random action
@@ -297,8 +300,9 @@ def build_track(og_racetrack):
 
     return track
 
+
 def generate_routes_gif(Racetrack, race_track):
-    episode = Episode(Racetrack, Racetrack.target_policy_dict)
+    episode = Episode(Racetrack)
     track = build_track(race_track)
     gifs_dir = Path(__file__).resolve().parent / "raccetrack_gifs"
     shutil.rmtree(gifs_dir, ignore_errors=True)
@@ -306,7 +310,9 @@ def generate_routes_gif(Racetrack, race_track):
     for each_start in range(len(Racetrack.start_coord_list)):
         images = []
         episode.episode = []
-        episode.generate(Racetrack, start_pos=Racetrack.start_coord_list[each_start])
+        episode.generate(
+            Racetrack, epsilon=0, start_pos=Racetrack.start_coord_list[each_start]
+        )
         for step in range(len(episode.episode)):
             track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
                 episode.episode[step][0][0]
