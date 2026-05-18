@@ -295,7 +295,8 @@ def main():
         )
 
         if MC_control_result:
-            utils.generate_routes_gif(race_track_obj, race_track)
+            if utils.generate_routes_gif(race_track_obj, race_track):
+                logger.info("Gifs generated.")
         else:
             logger.debug("Policy failed for this attempt.")
 

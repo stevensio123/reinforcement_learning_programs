@@ -356,3 +356,4 @@ def generate_routes_gif(Racetrack, race_track):
             duration=200,
             loop=0,
         )
+    return True
