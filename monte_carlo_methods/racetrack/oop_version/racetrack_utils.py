@@ -63,7 +63,7 @@ class Racetrack:
         rng = np.random.default_rng()
         self.action_values = np.round(
             rng.uniform(
-                -6, -3, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)
+                -3, -1, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)
             ),
             3,
         )  # NEW added rounding to 3 d.p for more accurate rounding
@@ -304,7 +304,7 @@ def build_track(og_racetrack):
 def generate_routes_gif(Racetrack, race_track):
     episode = Episode(Racetrack)
     track = build_track(race_track)
-    gifs_dir = Path(__file__).resolve().parent / "raccetrack_gifs"
+    gifs_dir = Path(__file__).resolve().parent / "racetrack_gifs"
     shutil.rmtree(gifs_dir, ignore_errors=True)
     gifs_dir.mkdir(exist_ok=True)
     for each_start in range(len(Racetrack.start_coord_list)):

@@ -290,7 +290,7 @@ def main():
             Racetrack=race_track_obj,
             epsilon=0.1,
             minimum_episode_requirement=100000,
-            minimum_starts_requirement=1000,
+            minimum_starts_requirement=10000,
             gamma=0.9,
         )
 
