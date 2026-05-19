@@ -63,7 +63,7 @@ class Racetrack:
         rng = np.random.default_rng()
         self.action_values = np.round(
             rng.uniform(
-                -3, -1, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)
+                -7, -6, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)
             ),
             3,
         )  # NEW added rounding to 3 d.p for more accurate rounding

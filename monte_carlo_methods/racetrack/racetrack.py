@@ -288,7 +288,7 @@ def main():
             break
         MC_control_result = off_policy_control(
             Racetrack=race_track_obj,
-            epsilon=0.1,
+            epsilon=0.25,
             minimum_episode_requirement=120000,
             minimum_starts_requirement=20000,
             gamma=0.9,
