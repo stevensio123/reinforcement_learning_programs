@@ -199,7 +199,7 @@ def off_policy_control(
             - update behavior policy with new epsilon if failed ep count reached max
             - reset failure ep counter and bar for new epsilon-soft policy
             """
-            if (generated_ep_counter >= minimum_episode_requirement) or (
+            if (generated_ep_counter >= minimum_episode_requirement) and (
                 min(successful_epi_dict.values()) >= minimum_starts_requirement
             ):
                 logger.info(
@@ -289,8 +289,8 @@ def main():
         MC_control_result = off_policy_control(
             Racetrack=race_track_obj,
             epsilon=0.1,
-            minimum_episode_requirement=100000,
-            minimum_starts_requirement=10000,
+            minimum_episode_requirement=120000,
+            minimum_starts_requirement=20000,
             gamma=0.9,
         )
 
