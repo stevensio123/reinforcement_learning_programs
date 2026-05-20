@@ -24,7 +24,8 @@ def incremental_prediction(Racetrack, episode, cum_is, epsilon, gamma=0.9):
     episode.reverse()
     g = 0
     w = 1
-    for step in range(len(episode)):
+    for step in range(len(episode) - 1):
+        step += 1
         # g already accounts for reward -1 for each step
         g = (gamma * g) - 1
         # state and action of step T-1 of the episode
@@ -279,7 +280,18 @@ def main():
         "####SSSSSS#########",
     ]
 
-    race_track_obj = utils.Racetrack(race_track)
+    csv_file = input("CSV file name? ")
+    if csv_file.endswith(".csv"):
+        try:
+            imported_file, max_steps, min_steps = utils.import_csv(csv_file)
+        except:
+            print("File not found")
+            raise SystemExit
+    else:
+        print("File is not the correct format")
+        raise SystemExit
+
+    race_track_obj = utils.Racetrack(imported_file, min_steps, max_steps)
     max_MC_control_attempt = 0
 
     while True:
@@ -289,7 +301,7 @@ def main():
         MC_control_result = off_policy_control(
             Racetrack=race_track_obj,
             epsilon=0.25,
-            minimum_episode_requirement=120000,
+            minimum_episode_requirement=500000,
             minimum_starts_requirement=20000,
             gamma=0.9,
         )

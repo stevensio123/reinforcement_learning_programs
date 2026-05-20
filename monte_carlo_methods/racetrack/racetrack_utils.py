@@ -1,11 +1,12 @@
-import numpy as np
-import random
+import csv
 import logging
 import logging.config
-from PIL import Image
-import shutil
 import matplotlib.pyplot as plt
+import numpy as np
 from pathlib import Path
+from PIL import Image
+import random
+import shutil
 
 log_dir = Path(__file__).resolve().parent
 
@@ -50,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 
 class Racetrack:
-    def __init__(self, racetrack):
+    def __init__(self, racetrack, min_steps, max_steps):
         """
         class to represent state space of racetrack.
         state value is initialized to random integer between -5 and 1 (inclusive) for each state.
@@ -63,7 +64,7 @@ class Racetrack:
         rng = np.random.default_rng()
         self.action_values = np.round(
             rng.uniform(
-                -7, -6, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)
+                -max_steps, -min_steps, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)
             ),
             3,
         )  # NEW added rounding to 3 d.p for more accurate rounding
@@ -91,6 +92,7 @@ class Racetrack:
         for coord in self.terminal_coord_list:
             self.y_terminal_locs.append(coord[1])
         self.y_terminal_smallest_loc = min(self.y_terminal_locs)
+        self.y_terminal_largest_loc = max(self.y_terminal_locs)
 
         # create target_policy actions that is greedy to best action
         self.target_policy_dict = np.empty(
@@ -115,7 +117,8 @@ def get_next_state(Racetrack, state, action):
     y += vy
     if Racetrack.x_terminal_loc <= x and Racetrack.y_terminal_smallest_loc <= y:
         x = Racetrack.x_terminal_loc
-        y = Racetrack.y_terminal_smallest_loc
+        if y > Racetrack.y_terminal_largest_loc:
+            y = Racetrack.y_terminal_largest_loc
     try:
         Racetrack.racetrack[x][y]
         # logger.debug("next state is %s", Racetrack.racetrack[x][y])
@@ -249,6 +252,9 @@ class Episode:
 
         while True:
             x, y, vx, vy = current_state
+            if (x,y) in Racetrack.terminal_coord_list:
+                self.episode.append((current_state, [0,0]))
+                break
             action_space_ls = get_action_space(current_state)
             if random.random() > epsilon:
                 # take optimal action according to current state values
@@ -260,9 +266,7 @@ class Episode:
                 # take random action
                 action_idx = np.random.randint(len(action_space_ls))
                 action = action_space_ls[action_idx]
-            if current_loc in Racetrack.terminal_coord_list:
-                break
-            elif action == None:
+            if action == None:
                 logger.warning(
                     "no action found for state(%d,%d,%d,%d), cancelling episode generation",
                     x,
@@ -344,10 +348,20 @@ def generate_routes_gif(Racetrack, race_track):
                 track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
                     episode.episode[step][0][0]
                 ] = 0.6
+            elif (
+                race_track[
+                    len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]
+                ][episode.episode[step][0][0]]
+                == "E"
+            ):
+                track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
+                    episode.episode[step][0][0]
+                ] = 0.4
             else:
                 track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
                     episode.episode[step][0][0]
                 ] = 1
+            plt.close()
         images[0].save(
             output_dir
             / f"Optimal_path_for_{Racetrack.start_coord_list[each_start]}.gif",
@@ -357,3 +371,30 @@ def generate_routes_gif(Racetrack, race_track):
             loop=0,
         )
     return True
+
+def import_csv(csvfile):
+    total_rows = 0
+    imported_racetrack = []
+    row_data = []
+    column_max_length = 0
+    with open(csvfile) as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if column_max_length < len(row):
+                column_max_length = len(row)
+
+        file.seek(0)
+        for row in reader:
+            total_rows += 1
+            for column in range(column_max_length):
+                if row[column] == "":
+                    row_data.append("#")
+                else:
+                    row_data.append(row[column])
+            imported_racetrack.append("".join(row_data))
+            row_data=[]
+
+    min_steps = round(max(total_rows, column_max_length) / 5)
+    max_steps = round(max(total_rows, column_max_length) / 4)
+    
+    return imported_racetrack, max_steps, min_steps
