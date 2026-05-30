@@ -1,4 +1,5 @@
 import racetrack_utils as utils
+import numpy as np
 # just for testing functions in utils
 
 """
@@ -50,11 +51,14 @@ if csv_file.endswith(".csv"):
         raise SystemExit
     print("\nTEST: racetrack object")
     racetrack = utils.Racetrack(imported_file, min_steps, max_steps)
+    imported_racetrack = np.array([list(row) for row in imported_file])
+    track = np.ones(shape=(len(racetrack), len(racetrack[0])))
     print(f"racetrack list (cartesian):{racetrack.racetrack}")
     print(f"start locations: {racetrack.start_coord_list}")
     print(f"terminal locations: {racetrack.terminal_coord_list}")
     print(f"racetrack[7][3]: {racetrack.racetrack[7][3]}")
     print(f"policy[7][3][1][2]: {racetrack.target_policy_dict[7][3][1][2]}")
+    print(f"racetrack length x: {len(racetrack.racetrack)}, y: {len(racetrack.racetrack[0])}")
 
 
     print("\nTEST: next_state function")

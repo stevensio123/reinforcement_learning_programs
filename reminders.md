@@ -58,3 +58,11 @@ How to check branches.
 Follow PEP 8 style guide:
 - *snake_case* for functions / objects / instance/ files
 - *CapWords* for classes
+
+# Using log file
+- To search for information within log file, you will need to use the bash kernel and command grep (Global Reg Exp Print) to access log files that could be in the GB or memory
+- Criterias can involve date & time, such as `grep "YYYY-MM-DD HH:MM" <file>.log` where minutes (MM) and hour (HH) can be left emptied to broaden the search more
+- grep acts similarly to SQL, where you can even nest searches such as `grep "YYYY-MM-DD HH:" <file>.log | grep -i "success"`
+    - Note that you do not need to call for the original log again as the grep after the | will filter based off the upstream filtered content
+    - `-i` stands for include and is one of multiple commands to be used by grep, more could be found at https://www.geeksforgeeks.org/linux-unix/grep-command-in-unixlinux/
+    
