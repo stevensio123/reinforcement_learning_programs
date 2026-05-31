@@ -66,7 +66,7 @@ class Racetrack:
             rng.uniform(
                 -max_steps, -min_steps, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)
             ),
-            3,
+            1,
         )  # NEW added rounding to 3 d.p for more accurate rounding
         # rng = np.random.default_rng()
         """
@@ -237,7 +237,7 @@ class Episode:
         self.terminal_locs = Racetrack.terminal_coord_list  # Moved to init as useful
         self.episode = []
 
-    def generate(self, Racetrack, epsilon, max_steps=100, start_pos=None):
+    def generate(self, Racetrack, epsilon, max_steps=100, breakdown=False, start_pos=None):
         """
         method to create episode by following the policy until it reaches terminal state.
         """
@@ -275,8 +275,10 @@ class Episode:
                     vy,
                 )
                 return False
-            if random.random() < 0.1: # for chance of random breakdown following problem
+            
+            if breakdown == True and random.random() < 0.1: # for chance of random breakdown following problem
                 action = [0,0]
+
             next_state = get_next_state(Racetrack, current_state, action)
             current_loc = (next_state[0], next_state[1])
             self.steps += 1
@@ -319,6 +321,9 @@ def generate_routes_gif(Racetrack, race_track):
         episode.generate(
             Racetrack, epsilon=0, start_pos=Racetrack.start_coord_list[each_start]
         )
+        if len(episode.episode) >= 100:
+            logger.debug("Failed at start position [%d,%d]", Racetrack.start_coord_list[each_start][0], Racetrack.start_coord_list[each_start][1])
+            return False
         for step in range(len(episode.episode)):
             track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
                 episode.episode[step][0][0]
