@@ -104,6 +104,21 @@ class WindyGridWorld(gym.Env):
         
         return {"agent": self._agent_location, "target": self._target_location}
     
+    # Array to show valid actions to take in the current state
+    def valid_action_space(self):
+        state = self._agent_location
+        mask = np.ones(9, dtype=np.int8)
+        if state[1] < 1:
+            mask[[2,4,6]] = 0
+        elif state[1] >= self.x_size - 1:
+            mask[[3,5,7]] = 0
+        if state[0] < 1:
+            mask[[0,4,5]] = 0
+        elif state[1] >= self.y_size - 1:
+            mask[[1,6,7]] = 0
+        
+        return mask
+    
     def step(self, action):
         direction = self._action_to_direction[action]
         
@@ -131,3 +146,69 @@ class WindyGridWorld(gym.Env):
             self._render_frame()
         
         return {"agent": self._agent_location, "target": self._target_location}, reward, terminated, False
+    
+    def render(self):
+        if self.render_mode == "rgb_array":
+            return self._render_frame()
+        
+    def _render_frame(self):
+        if self.window is None and self.render_mode == "human":
+            pygame.init()
+            pygame.display.init()
+            self.window = pygame.display.set_mode(
+                (self.window_size, self.window_size)
+            )
+        if self.clock is None and self.render_mode == "human":
+            self.clock = pygame.time.Clock()
+
+        canvas = pygame.Surface((self.window_size, self.window_size))
+        canvas.fill((255,255,255))
+
+        # Set default rectangle size
+        pix_square_size = (
+            self.window_size / self.x_size,
+            self.window_size / self.y_size,
+            )
+        
+        # Draw target and agent
+        pygame.draw.rect(
+            canvas,
+            (255,0,0),
+            pygame.Rect(
+                pix_square_size * self._target_location[::-1], # -1 is to reverse the list to fit (x,y) coordinate format
+                pix_square_size,
+            ),
+        )
+
+        pygame.draw.rect(
+            canvas,
+            (0,255,0),
+            pygame.Rect(
+                pix_square_size * self._agent_location[::-1],
+                pix_square_size,
+            ),
+        )
+
+        # Gridlines
+        for x in range(self.x_size + 1):
+            # draw.line func input (surface, colour, start_pos, end_pos,width)
+            pygame.draw.line(
+                canvas,
+                0,
+                (pix_square_size[0] * x, 0),
+                (pix_square_size[0] * x, self.y_size),
+                width=3
+            )
+        
+        if self.render_mode == "human":
+            # Copy onto display and allow pygame to automatically run internal functions to prevent freezing
+            self.window.blit(canvas, canvas.get_rect())
+            pygame.event.pump()
+            pygame.display.update()
+            # Allow the updates to happen at a pre-determined framerate
+            self.clock.tick(self.metadata["render_fps"])
+        
+        else:
+            return np.transpose(
+                np.array(pygame.surfarray.pixels3d(canvas)), axes=(1,0,2)
+            )
