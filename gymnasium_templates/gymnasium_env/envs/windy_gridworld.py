@@ -1,45 +1,8 @@
 from enum import Enum
 import gymnasium as gym
 from gymnasium import spaces
-import logging
-import logging.config
-from pathlib import Path
 import numpy as np
 import pygame
-
-log_dir = Path(__file__).resolve.parent
-
-formatter = logging.Formatter()
-logging.config.dictconfig(
-    {
-        "version": 1,
-        "formatters": {
-            "standard": {
-                "format": "%(asctime)s | %(name)s - %(levelname)s | %(message)s"
-            }
-        },
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
-                "formatter": "standard",
-                "level": "INFO",  # setting to INFO / DEBUG causes conflicts with displaying tqdm progress bars
-            },
-            "file": {
-                "class": "logging.FileHandler",
-                "filename": f"{log_dir}/windy_gridworld.log",
-                "formatter": "standard",
-                "level": "DEBUG",
-                "mode": "w",  # write or replace log file
-            },
-        },
-        "root": {
-            "level": "DEBUG",
-            "handlers": ["console", "file"],  # logs to both console and file
-        }
-    }
-)
-
-logger = logging.getLogger(__name__)
 
 class Action(Enum):
     UP = 0
@@ -85,28 +48,16 @@ class WindyGridWorld(gym.Env):
             Action.STAY.value: np.array([0,0]),
         }
 
-        assert render_mode is None or render_mode is self.metadata["render_modes"]
+        # assert render_mode is None or render_mode is self.metadata["render_modes"]
         self.render_mode = render_mode
         
         # Only used when human is chosen from render_modes else stays as None
         self.window = None
         self.clock = None
 
-    def reset(self, seed=None, options=None):
-        # Agent and target always starts at the same location so no need for np.random
-        self._agent_location = np.array([3,0])
-        self._target_location = np.array([3,7])
-
-        logger.info("Environment succesfully resetted to agent start location: [3.0] & target location: [3,7]")
-
-        if self.render_mode == "human":
-            self._render_frame()
-        
-        return {"agent": self._agent_location, "target": self._target_location}
-    
     # Array to show valid actions to take in the current state
-    def valid_action_space(self):
-        state = self._agent_location
+    def valid_action_space(self, agent_loc):
+        state = agent_loc
         mask = np.ones(9, dtype=np.int8)
         if state[1] < 1:
             mask[[2,4,6]] = 0
@@ -118,6 +69,27 @@ class WindyGridWorld(gym.Env):
             mask[[1,6,7]] = 0
         
         return mask
+    
+    def _get_obs(self):
+        return {"agent": self._agent_location, "target": self._target_location}
+    
+    def _get_info(self):
+        return {"action_mask": self.valid_action_space(self._agent_location)}
+
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+
+        # Agent and target always starts at the same location so no need for np.random
+        self._agent_location = np.array([3,0])
+        self._target_location = np.array([3,7])
+    
+        obv = self._get_obs()
+        info = self._get_info()
+
+        if self.render_mode == "human":
+            self._render_frame()
+        
+        return obv, info
     
     def step(self, action):
         direction = self._action_to_direction[action]
@@ -134,18 +106,19 @@ class WindyGridWorld(gym.Env):
             self._agent_location + env_influence + direction, 0, [self.x_size - 1, self.y_size - 1]
         )
 
+        obv = self._get_obs()
+        info = self._get_info()
+
         # Check if agent has reached target location
         terminated = np.array_equal(self._agent_location, self._target_location)
 
         # Taken from reward given in exercise
         reward =  0 if terminated else -1
 
-        logger.debug("Agent location: (%d, %d)", self._agent_location[1], self._agent_location[0])
-
         if self.render_mode == "human":
             self._render_frame()
         
-        return {"agent": self._agent_location, "target": self._target_location}, reward, terminated, False
+        return obv, reward, terminated, False, info
     
     def render(self):
         if self.render_mode == "rgb_array":
@@ -212,3 +185,9 @@ class WindyGridWorld(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1,0,2)
             )
+    
+    # Just in case to close the env
+    def close(self):
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
