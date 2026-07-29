@@ -97,9 +97,9 @@ class WindyGridWorld(gym.Env):
         # For the effects of being in certain x-axis that causes increase in y-axis
         env_influence = np.array([0,0])
         if self._agent_location[1] in [3,4,5,8]:
-            env_influence = np.array([1,0])
+            env_influence = np.array([-1,0])
         elif self._agent_location[1] in [6,7]:
-            env_influence = np.array([2,0])
+            env_influence = np.array([-2,0])
 
         # Move agent as follows based off action and env influence
         self._agent_location = np.clip(
@@ -185,7 +185,7 @@ class WindyGridWorld(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1,0,2)
             )
-    
+
     # Just in case to close the env
     def close(self):
         if self.window is not None:
