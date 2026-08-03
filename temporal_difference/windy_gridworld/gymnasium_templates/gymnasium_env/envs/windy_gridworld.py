@@ -25,8 +25,7 @@ class WindyGridWorld(gym.Env):
 
         self.observation_space = spaces.Dict(
             {
-                "agent": spaces.Box(np.array([0,0]), np.array([y_size - 1, x_size - 1]), shape=(2,), dtype=int),
-                "target": spaces.Box(np.array([0,0]), np.array([y_size - 1, x_size - 1]), shape=(2,), dtype=int)
+                "agent": spaces.Box(np.array([0,0]), np.array([y_size - 1, x_size - 1]), shape=(2,), dtype=int)
             }
         )
 
