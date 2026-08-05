@@ -26,6 +26,9 @@ def autocorrelation(return_list: list, lag_time=1):
 
 
 def autocorrelation_v2(input_list: list, lag=1):
+    """
+    The autocorrelation at lag k is defined as the ratio of the autocovariance at lag k to the variance.
+    """
     arr = np.array(input_list)
     mean = np.mean(arr)
     unlagged = np.array(arr[:-lag])
