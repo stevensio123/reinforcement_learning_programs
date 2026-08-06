@@ -2,6 +2,8 @@ import json
 import requests
 import math
 import statistics
+from pathlib import Path
+import fin_algo_util as fin
 
 """
 company = input("Company name? ")
@@ -47,7 +49,10 @@ else:
     print("No symbol found.")
 """
 # Temporary for local test data as alphaframe only allow 25 requests per day
-with open("info.json", "r", encoding="utf-8") as file:
+
+og_dir = Path(__file__).resolve().parent
+
+with open(f"{og_dir}/info.json", "r", encoding="utf-8") as file:
     data = json.load(file)
 
 log_daily_return_list = []
@@ -63,3 +68,7 @@ for trade_info_idx in range(len(data["Time Series (Daily)"]) - 1):
 daily_return_mean = statistics.mean(log_daily_return_list)
 daily_return_std = statistics.stdev(log_daily_return_list)
 annual_return_std = daily_return_std * 16
+
+list = [10,9,8,7,6,5,4,3,2,1]
+
+print(fin.moving_average_list(list, 5, "weighed"))
