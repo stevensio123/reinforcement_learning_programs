@@ -1,4 +1,5 @@
 /monte_carlo_methods/racetrack/racetrack.log
 /monte_carlo_methods/racetrack/__pycache__
 /mini_project/*.txt
-/mini_project/__pycache__
+/temporal_difference/windy_gridworld/windy-gridworld-gym/gymnasium_env/__pycache__
+/temporal_difference/windy_gridworld/windy-gridworld-gym/gymnasium_env/envs/__pycache__
