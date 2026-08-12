@@ -21,10 +21,12 @@ def TD_Sarsa(
     alpha=0.5,  # delta learning-rate
     gamma=1,  # Next state-action pair weighing/ discounting-factor
     epsilon=0.1,  # greedy-epsilon policy
+    render=None,
 ):
     np.random.seed(seed)
     random.seed(seed)
 
+    env.render_mode = render
     n_states_x = env.x_size
     n_states_y = env.y_size
     n_actions = env.action_space.n
@@ -32,7 +34,8 @@ def TD_Sarsa(
 
     # For reward tracking
     episodes_dict = defaultdict(int)
-    episode_num = 0
+    episodes_dict["0"] = 0
+    episode_num = 1
 
     for episode in range(episodes):
         state, info = env.reset(seed=seed + episode)
@@ -66,7 +69,11 @@ def TD_Sarsa(
 
             state = next_state
             episodes_dict[episode_num] += 1
+            if episode > 0:
+                env.render()
         episode_num += 1
+        
+
     return episodes_dict
 
 
@@ -91,21 +98,23 @@ def main():
         env_wrapped = gym.make("gymnasium_env/WindyGridWorld-v0")
         env = env_wrapped.unwrapped
         results = TD_Sarsa(
-            env, episodes=episodes, seed=seed, alpha=alpha, gamma=gamma, epsilon=epsilon
+            env, episodes=episodes, seed=seed, alpha=alpha, gamma=gamma, epsilon=epsilon, render="human"
         )
         results_list.append(results)
         # Extract keys and values
-        x = list(results.keys())
-        y = list(results.values())
-        # y_cumsum = np.cumsum(y)
+        y = list(results.keys())
+        x = list(results.values())
+        x_cumsum = np.cumsum(x)
 
         plt.figure()
-        plt.plot(x, y, "b-")
-        plt.xlabel("Episode Number")
-        plt.ylabel("Steps Taken")
+        plt.plot(x_cumsum, y, "b-")
+        plt.xlabel("Steps Taken")
+        plt.ylabel("Episodes")
+        plt.xlim(0, round(x_cumsum[170],-3))
+        plt.ylim(-5, 170)
+        plt.yticks([0,50,100,150,170])
         plt.title("Steps taken for each episodes")
         plt.savefig(f"run_{i:04d}.png")
-        # plt.show()
 
         # pprint.pprint(results, indent=4, width=60, sort_dicts=True)
     # print(f"all runs completed, all results:{results_list}")

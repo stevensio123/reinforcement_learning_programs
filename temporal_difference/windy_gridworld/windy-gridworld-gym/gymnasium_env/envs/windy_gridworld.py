@@ -18,7 +18,7 @@ class Action(Enum):
 
 
 class WindyGridWorld(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 60}
 
     def __init__(self, render_mode=None, x_size=10, y_size=7):
         self.x_size = x_size
@@ -129,7 +129,7 @@ class WindyGridWorld(gym.Env):
         return obv, reward, terminated, False, info
 
     def render(self):
-        if self.render_mode == "rgb_array":
+        if self.render_mode == "rgb_array" or "human":
             return self._render_frame()
 
     def _render_frame(self):
