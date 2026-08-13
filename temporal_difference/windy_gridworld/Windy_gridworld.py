@@ -53,7 +53,7 @@ def TD_Sarsa(
                 action = np.argmax(q_table[state["agent"][0], state["agent"][1]])
 
             # Take action and observe result
-            next_state, reward, done, truncated, info = env.step(action)
+            next_state, reward, done, truncated, info = env.step(action, episode + 1)
             total_reward += reward
 
             # Sarsa update
@@ -69,11 +69,8 @@ def TD_Sarsa(
 
             state = next_state
             episodes_dict[episode_num] += 1
-            if episode > 0:
-                env.render()
         episode_num += 1
         
-
     return episodes_dict
 
 
