@@ -18,7 +18,7 @@ class Action(Enum):
 
 
 class WindyGridWorld(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 60}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
     def __init__(self, render_mode=None, x_size=10, y_size=7):
         self.x_size = x_size
@@ -128,6 +128,17 @@ class WindyGridWorld(gym.Env):
 
         return obv, reward, terminated, False, info
 
+    def arrow_flipper(self, arrow, direction):
+        match direction:
+            case 1: # Down
+                arrow[0][1] += self.pix_square_size[1]
+            case 2: # Left
+                arrow[1][0] -= self.pix_square_size[0] / 2
+                arrow[1][1] -= self.pix_square_size[1] / 2
+
+
+        return arrow
+
     def render(self):
         if self.render_mode == "rgb_array" or "human":
             return self._render_frame()
@@ -144,7 +155,7 @@ class WindyGridWorld(gym.Env):
         canvas.fill((255, 255, 255))
 
         # Set default rectangle size
-        pix_square_size = (
+        self.pix_square_size = (
             self.window_size / self.x_size,
             self.window_size / self.y_size,
         )
@@ -154,11 +165,11 @@ class WindyGridWorld(gym.Env):
             canvas,
             (255, 0, 0),
             pygame.Rect(
-                pix_square_size
+                self.pix_square_size
                 * self._target_location[
                     ::-1
                 ],  # -1 is to reverse the list to fit (x,y) coordinate format
-                pix_square_size,
+                self.pix_square_size,
             ),
         )
 
@@ -166,9 +177,22 @@ class WindyGridWorld(gym.Env):
             canvas,
             (0, 255, 0),
             pygame.Rect(
-                pix_square_size * self._agent_location[::-1],
-                pix_square_size,
+                self.pix_square_size * self._agent_location[::-1],
+                self.pix_square_size,
             ),
+        )
+
+        # Draw arrow NOTE: Current_location is default pointing up
+        current_location = [
+            [(self.pix_square_size[0] * (self._agent_location[1] + 1)) - self.pix_square_size[0]/2, self.pix_square_size[1] * self._agent_location[0]], # Top point
+            [(self.pix_square_size[0] * (self._agent_location[1] + 1)), self.pix_square_size[1] * (self._agent_location[0] + 1) - self.pix_square_size[1]/2], # Right point
+            [self.pix_square_size[0] * (self._agent_location[1]), (self.pix_square_size[1] * (self._agent_location[0] + 1)) - self.pix_square_size[1]/2], # Left point
+            ]
+        
+        pygame.draw.polygon(
+            canvas,
+            (0, 0, 255),
+            current_location
         )
 
         # Gridlines
@@ -177,8 +201,16 @@ class WindyGridWorld(gym.Env):
             pygame.draw.line(
                 canvas,
                 0,
-                (pix_square_size[0] * x, 0),
-                (pix_square_size[0] * x, self.y_size),
+                (self.pix_square_size[0] * x, 0),
+                (self.pix_square_size[0] * x, self.window_size),
+                width=3,
+            )
+        for y in range(self.y_size + 1):
+            pygame.draw.line(
+                canvas,
+                0,
+                (0 ,self.pix_square_size[1] * y),
+                (self.window_size, self.pix_square_size[1] * y),
                 width=3,
             )
 
