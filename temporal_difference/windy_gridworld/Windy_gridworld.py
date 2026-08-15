@@ -32,7 +32,7 @@ def TD_Sarsa(
     n_actions = env.action_space.n
     q_table = np.zeros(shape=(n_states_y, n_states_x, n_actions))
 
-    # For reward tracking
+    # episode_dict is used to keep track of amount of steps taken for each episode.
     episodes_dict = defaultdict(int)
     episodes_dict["0"] = 0
     episode_num = 1
@@ -69,8 +69,15 @@ def TD_Sarsa(
 
             state = next_state
             episodes_dict[episode_num] += 1
+        # update q(s,a) for step T-1
+        q_table[state["agent"][0], state["agent"][1], action] += alpha * (
+            reward
+            + (gamma * next_max)
+            - q_table[state["agent"][0], state["agent"][1], action]
+        )
+        episodes_dict[episode_num] += 1
         episode_num += 1
-        
+
     return episodes_dict
 
 
@@ -95,7 +102,13 @@ def main():
         env_wrapped = gym.make("gymnasium_env/WindyGridWorld-v0")
         env = env_wrapped.unwrapped
         results = TD_Sarsa(
-            env, episodes=episodes, seed=seed, alpha=alpha, gamma=gamma, epsilon=epsilon, render="human"
+            env,
+            episodes=episodes,
+            seed=seed,
+            alpha=alpha,
+            gamma=gamma,
+            epsilon=epsilon,
+            render="human",
         )
         results_list.append(results)
         # Extract keys and values
@@ -107,9 +120,9 @@ def main():
         plt.plot(x_cumsum, y, "b-")
         plt.xlabel("Steps Taken")
         plt.ylabel("Episodes")
-        plt.xlim(0, round(x_cumsum[170],-3))
+        plt.xlim(0, round(x_cumsum[170], -3))
         plt.ylim(-5, 170)
-        plt.yticks([0,50,100,150,170])
+        plt.yticks([0, 50, 100, 150, 170])
         plt.title("Steps taken for each episodes")
         plt.savefig(f"run_{i:04d}.png")
 
