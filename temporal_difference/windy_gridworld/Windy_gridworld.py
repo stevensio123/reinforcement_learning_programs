@@ -22,11 +22,17 @@ def TD_Sarsa(
     gamma=1,  # Next state-action pair weighing/ discounting-factor
     epsilon=0.1,  # greedy-epsilon policy
     render=None,
+    render_path="",
+    stochastic=False,
 ):
     np.random.seed(seed)
     random.seed(seed)
 
     env.render_mode = render
+    env.render_path = render_path
+    env.stochastic = stochastic
+    env.last_episode = episodes
+
     n_states_x = env.x_size
     n_states_y = env.y_size
     n_actions = env.action_space.n
@@ -59,14 +65,17 @@ def TD_Sarsa(
             # Sarsa update
             if not (done or truncated):
                 if np.random.random() < epsilon:
-                    next_q = q_table[next_state["agent"][0], next_state["agent"][1]][np.random.randint(0, n_actions)]
+                    next_q = q_table[next_state["agent"][0], next_state["agent"][1]][
+                        np.random.randint(0, n_actions)
+                    ]
                 else:
                     next_q = np.max(
                         q_table[next_state["agent"][0], next_state["agent"][1]]
                     )
             else:
+                # q value for terminal step
                 next_q = 0
-            
+
             q_table[state["agent"][0], state["agent"][1], action] += alpha * (
                 reward
                 + (gamma * next_q)
@@ -82,15 +91,13 @@ def TD_Sarsa(
     return episodes_dict
 
 
-# return {"episodes taken": episodes}
-
-
 def main():
     n_runs = 10
     episodes = 1000
     alpha = 0.5  # delta learning-rate
     gamma = 1  # Next state-action pair weighing/ discounting-factor
     epsilon = 0.1  # greedy-epsilon policy
+    render_path = Path(__file__).resolve().parent 
 
     # Generate different seeds for each run
     seeds = [BASE_RANDOM_SEED + i for i in range(n_runs)]
@@ -110,6 +117,8 @@ def main():
             gamma=gamma,
             epsilon=epsilon,
             render="human",
+            render_path=render_path
+            stochastic=True,
         )
         results_list.append(results)
         # Extract keys and values
@@ -126,9 +135,6 @@ def main():
         plt.yticks([0, 50, 100, 150, 170])
         plt.title("Steps taken for each episodes")
         plt.savefig(f"run_{i + 1:04d}.png")
-
-        # pprint.pprint(results, indent=4, width=60, sort_dicts=True)
-    # print(f"all runs completed, all results:{results_list}")
 
 
 if __name__ == "__main__":

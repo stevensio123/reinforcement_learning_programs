@@ -25,6 +25,9 @@ class WindyGridWorld(gym.Env):
         self.y_size = y_size
         self.window_size = 512
         self.action = 0
+        self.stochastic = False
+        self.render_path = ""
+        self.last_episode = 0
 
         self.observation_space = spaces.Dict(
             {
@@ -105,9 +108,12 @@ class WindyGridWorld(gym.Env):
         # For the effects of being in certain x-axis that causes increase in y-axis
         env_influence = np.array([0, 0])
         if self._agent_location[1] in [3, 4, 5, 8]:
-            env_influence = np.array([-1, 0])
+            env_influence += np.array([-1, 0])
         elif self._agent_location[1] in [6, 7]:
-            env_influence = np.array([-2, 0])
+            env_influence += np.array([-2, 0])
+        if self.stochastic:
+            # add stochastic wind if true
+            env_influence += np.array([np.random.randint(-1, 2), 0])
 
         # Move agent as follows based off action and env influence
         self._agent_location = np.clip(
@@ -132,25 +138,25 @@ class WindyGridWorld(gym.Env):
 
     def arrow_flipper(self, arrow, direction):
         match direction:
-            case 1: # Down
+            case 1:  # Down
                 arrow[0][1] += self.pix_square_size[1]
-            case 2: # Left
+            case 2:  # Left
                 arrow[1][0] -= self.pix_square_size[0] / 2
                 arrow[1][1] += self.pix_square_size[1] / 2
-            case 3: # Right
+            case 3:  # Right
                 arrow[2][0] += self.pix_square_size[0] / 2
                 arrow[2][1] += self.pix_square_size[1] / 2
-            case 4: # Left-up
+            case 4:  # Left-up
                 arrow[1][0] -= self.pix_square_size[0]
                 arrow[1][1] -= self.pix_square_size[1] / 2
-            case 5: # Right-up
+            case 5:  # Right-up
                 arrow[2][0] += self.pix_square_size[0]
                 arrow[2][1] -= self.pix_square_size[1] / 2
-            case 6: # Left-down
+            case 6:  # Left-down
                 arrow[0][1] += self.pix_square_size[1]
                 arrow[1][0] -= self.pix_square_size[0]
                 arrow[1][1] += self.pix_square_size[1] / 2
-            case 7: # Right-down
+            case 7:  # Right-down
                 arrow[0][1] += self.pix_square_size[1]
                 arrow[2][0] += self.pix_square_size[0]
                 arrow[2][1] += self.pix_square_size[1] / 2
@@ -204,23 +210,33 @@ class WindyGridWorld(gym.Env):
 
         # Draw arrow NOTE: Current_location is default pointing up
         current_location = [
-            [(self.pix_square_size[0] * (self._agent_location[1] + 1)) - self.pix_square_size[0]/2, self.pix_square_size[1] * self._agent_location[0]], # Top point
-            [(self.pix_square_size[0] * (self._agent_location[1] + 1)), self.pix_square_size[1] * (self._agent_location[0] + 1) - self.pix_square_size[1]/2], # Right point
-            [self.pix_square_size[0] * (self._agent_location[1]), (self.pix_square_size[1] * (self._agent_location[0] + 1)) - self.pix_square_size[1]/2], # Left point
-            ]
-        
+            [
+                (self.pix_square_size[0] * (self._agent_location[1] + 1))
+                - self.pix_square_size[0] / 2,
+                self.pix_square_size[1] * self._agent_location[0],
+            ],  # Top point
+            [
+                (self.pix_square_size[0] * (self._agent_location[1] + 1)),
+                self.pix_square_size[1] * (self._agent_location[0] + 1)
+                - self.pix_square_size[1] / 2,
+            ],  # Right point
+            [
+                self.pix_square_size[0] * (self._agent_location[1]),
+                (self.pix_square_size[1] * (self._agent_location[0] + 1))
+                - self.pix_square_size[1] / 2,
+            ],  # Left point
+        ]
+
         if self.action == 8:
             pygame.draw.circle(
                 canvas,
                 (0, 0, 255),
                 (self._agent_location[::-1] + 0.5) * self.pix_square_size,
-                (self.pix_square_size[0] + self.pix_square_size[1]) / 8
+                (self.pix_square_size[0] + self.pix_square_size[1]) / 8,
             )
         else:
             pygame.draw.polygon(
-                canvas,
-                (0, 0, 255),
-                self.arrow_flipper(current_location, self.action)
+                canvas, (0, 0, 255), self.arrow_flipper(current_location, self.action)
             )
 
         # Gridlines
@@ -237,7 +253,7 @@ class WindyGridWorld(gym.Env):
             pygame.draw.line(
                 canvas,
                 0,
-                (0 ,self.pix_square_size[1] * y),
+                (0, self.pix_square_size[1] * y),
                 (self.window_size, self.pix_square_size[1] * y),
                 width=3,
             )
@@ -254,6 +270,8 @@ class WindyGridWorld(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
+        if episode == self.last_episode - 1:
+            pygame.image.save(canvas, self.render_path / "final_episode")
 
     # Just in case to close the env
     def close(self):
