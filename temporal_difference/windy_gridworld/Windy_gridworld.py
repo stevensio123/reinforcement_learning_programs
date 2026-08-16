@@ -58,23 +58,24 @@ def TD_Sarsa(
 
             # Sarsa update
             if not (done or truncated):
-                next_max = np.max(
-                    q_table[next_state["agent"][0], next_state["agent"][1]]
-                )
-                q_table[state["agent"][0], state["agent"][1], action] += alpha * (
-                    reward
-                    + (gamma * next_max)
-                    - q_table[state["agent"][0], state["agent"][1], action]
-                )
+                if np.random.random() < epsilon:
+                    next_q = q_table[next_state["agent"][0], next_state["agent"][1]][np.random.randint(0, n_actions)]
+                else:
+                    next_q = np.max(
+                        q_table[next_state["agent"][0], next_state["agent"][1]]
+                    )
+            else:
+                next_q = 0
+            
+            q_table[state["agent"][0], state["agent"][1], action] += alpha * (
+                reward
+                + (gamma * next_q)
+                - q_table[state["agent"][0], state["agent"][1], action]
+            )
 
             state = next_state
             episodes_dict[episode_num] += 1
-        # update q(s,a) for step T-1
-        q_table[state["agent"][0], state["agent"][1], action] += alpha * (
-            reward
-            + (gamma * next_max)
-            - q_table[state["agent"][0], state["agent"][1], action]
-        )
+
         episodes_dict[episode_num] += 1
         episode_num += 1
 
@@ -124,7 +125,7 @@ def main():
         plt.ylim(-5, 170)
         plt.yticks([0, 50, 100, 150, 170])
         plt.title("Steps taken for each episodes")
-        plt.savefig(f"run_{i:04d}.png")
+        plt.savefig(f"run_{i + 1:04d}.png")
 
         # pprint.pprint(results, indent=4, width=60, sort_dicts=True)
     # print(f"all runs completed, all results:{results_list}")
