@@ -18,7 +18,7 @@ class Action(Enum):
 
 
 class WindyGridWorld(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 60}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 120}
 
     def __init__(self, render_mode=None, x_size=10, y_size=7):
         self.x_size = x_size
@@ -27,7 +27,6 @@ class WindyGridWorld(gym.Env):
         self.action = 0
         self.stochastic = False
         self.render_path = ""
-        self.last_episode = 0
 
         self.observation_space = spaces.Dict(
             {
@@ -131,7 +130,7 @@ class WindyGridWorld(gym.Env):
         # Taken from reward given in exercise
         reward = 0 if terminated else -1
 
-        if self.render_mode == "human":
+        if self.render_mode == "human" or "rgb_array":
             self._render_frame(episode)
 
         return obv, reward, terminated, False, info
@@ -258,6 +257,8 @@ class WindyGridWorld(gym.Env):
                 width=3,
             )
 
+        pygame.image.save(canvas, self.render_path / "final_episode.png")
+
         if self.render_mode == "human":
             # Copy onto display and allow pygame to automatically run internal functions to prevent freezing
             self.window.blit(canvas, canvas.get_rect())
@@ -270,8 +271,7 @@ class WindyGridWorld(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
-        if episode == self.last_episode - 1:
-            pygame.image.save(canvas, self.render_path / "final_episode")
+        
 
     # Just in case to close the env
     def close(self):

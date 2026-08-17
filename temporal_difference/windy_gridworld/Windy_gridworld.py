@@ -8,6 +8,8 @@ from collections import defaultdict
 # For visualisation and save location usage
 from pathlib import Path
 import matplotlib.pyplot as plt
+import shutil
+from PIL import Image
 
 
 # Base random seed
@@ -24,14 +26,24 @@ def TD_Sarsa(
     render=None,
     render_path="",
     stochastic=False,
+    run_number=0
 ):
     np.random.seed(seed)
     random.seed(seed)
 
+    # Designate output gif directory
+    gifs_dir = Path(__file__).resolve().parent / "windy_gridworld_gifs"
+    gifs_dir.mkdir(exist_ok=True)
+    output_dir = Path(gifs_dir / f"windy_{run_number}")
+    shutil.rmtree(output_dir, ignore_errors=True)
+    output_dir.mkdir(exist_ok=True)
+
+    # List for gif images
+    images = []
+
     env.render_mode = render
     env.render_path = render_path
     env.stochastic = stochastic
-    env.last_episode = episodes
 
     n_states_x = env.x_size
     n_states_y = env.y_size
@@ -85,8 +97,24 @@ def TD_Sarsa(
             state = next_state
             episodes_dict[episode_num] += 1
 
-        episodes_dict[episode_num] += 1
+            # Creates gif, NOTE that render has to be either "human" or "rgb_array"
+            if render != None:
+                if episode == episodes - 1:
+                    shutil.copy(Path(__file__).resolve().parent / "final_episode.png", output_dir / f"Final episode step {episodes_dict[episode_num]}.png")
+                    image = Image.open(output_dir / f"Final episode step {episodes_dict[episode_num]}.png")
+                    images.append(image)
+        
         episode_num += 1
+
+    if render != None:
+        images[0].save(
+                output_dir
+                / f"Optimal_path_for_{run_number}.gif",
+                save_all=True,
+                append_images=images[1:],
+                duration=200,
+                loop=0,
+            )
 
     return episodes_dict
 
@@ -97,7 +125,9 @@ def main():
     alpha = 0.5  # delta learning-rate
     gamma = 1  # Next state-action pair weighing/ discounting-factor
     epsilon = 0.1  # greedy-epsilon policy
-    render_path = Path(__file__).resolve().parent 
+    source_path = Path(__file__).resolve().parent
+    image_path = source_path / "run_graphs"
+    image_path.mkdir(exist_ok=True)
 
     # Generate different seeds for each run
     seeds = [BASE_RANDOM_SEED + i for i in range(n_runs)]
@@ -116,9 +146,10 @@ def main():
             alpha=alpha,
             gamma=gamma,
             epsilon=epsilon,
-            render="human",
-            render_path=render_path
-            stochastic=True,
+            render="rgb_array",
+            render_path=source_path,
+            stochastic=False,
+            run_number=i + 1,
         )
         results_list.append(results)
         # Extract keys and values
@@ -134,7 +165,7 @@ def main():
         plt.ylim(-5, 170)
         plt.yticks([0, 50, 100, 150, 170])
         plt.title("Steps taken for each episodes")
-        plt.savefig(f"run_{i + 1:04d}.png")
+        plt.savefig(image_path / f"run_{i + 1:04d}.png")
 
 
 if __name__ == "__main__":
