@@ -1,4 +1,4 @@
-## Disclaimer
+## Reinforcement Learning Programs
 
 This repository contains our own solutions and implementations inspired by
 *Reinforcement Learning: An Introduction* (Second Edition) by Richard S. Sutton and Andrew G. Barto. All code was developed for educational and learning purposes.
@@ -7,4 +7,4 @@ Limited AI assistance was used for testing, debugging, and documentation. The co
 
 Solutions by 
 - [Steven](https://github.com/stevensio123)
-- [Justin](https://github.com/justinpun728).
+- [Justin](https://github.com/justinpun728)
