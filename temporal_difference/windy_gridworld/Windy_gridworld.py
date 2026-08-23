@@ -26,7 +26,7 @@ def TD_Sarsa(
     render=None,
     render_path="",
     stochastic=False,
-    run_number=0
+    run_number=0,
 ):
     np.random.seed(seed)
     random.seed(seed)
@@ -34,7 +34,7 @@ def TD_Sarsa(
     # Designate output gif directory
     gifs_dir = Path(__file__).resolve().parent / "windy_gridworld_gifs"
     gifs_dir.mkdir(exist_ok=True)
-    output_dir = Path(gifs_dir / f"windy_{run_number}")
+    output_dir = Path(gifs_dir / f"windy_{run_number:03d}")
     shutil.rmtree(output_dir, ignore_errors=True)
     output_dir.mkdir(exist_ok=True)
 
@@ -100,21 +100,27 @@ def TD_Sarsa(
             # Creates gif, NOTE that render has to be either "human" or "rgb_array"
             if render != None:
                 if episode == episodes - 1:
-                    shutil.copy(Path(__file__).resolve().parent / "final_episode.png", output_dir / f"Final episode step {episodes_dict[episode_num]}.png")
-                    image = Image.open(output_dir / f"Final episode step {episodes_dict[episode_num]}.png")
+                    shutil.copy(
+                        Path(__file__).resolve().parent / "final_episode.png",
+                        output_dir
+                        / f"final_episode_step{episodes_dict[episode_num]:03d}.png",
+                    )
+                    image = Image.open(
+                        output_dir
+                        / f"final_episode_step{episodes_dict[episode_num]:03d}.png"
+                    )
                     images.append(image)
-        
+
         episode_num += 1
 
     if render != None:
         images[0].save(
-                output_dir
-                / f"Optimal_path_for_{run_number}.gif",
-                save_all=True,
-                append_images=images[1:],
-                duration=200,
-                loop=0,
-            )
+            output_dir / f"optimal_path_run{run_number:03d}.gif",
+            save_all=True,
+            append_images=images[1:],
+            duration=200,
+            loop=0,
+        )
 
     return episodes_dict
 
