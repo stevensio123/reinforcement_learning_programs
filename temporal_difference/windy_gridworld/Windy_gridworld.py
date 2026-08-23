@@ -32,11 +32,14 @@ def TD_Sarsa(
     random.seed(seed)
 
     # Designate output gif directory
-    gifs_dir = Path(__file__).resolve().parent / "windy_gridworld_gifs"
-    gifs_dir.mkdir(exist_ok=True)
-    output_dir = Path(gifs_dir / f"windy_{run_number:03d}")
-    shutil.rmtree(output_dir, ignore_errors=True)
-    output_dir.mkdir(exist_ok=True)
+    if render_path == "":
+        render_path = Path(__file__).resolve().parent / "outputs"
+    output_path = render_path
+    gifs_dir = output_path / "windy_gridworld_gifs"
+    gifs_dir.mkdir(parents=True, exist_ok=True)
+    gif_output_dir = gifs_dir / f"run_{run_number:02d}"
+    shutil.rmtree(gif_output_dir, ignore_errors=True)
+    gif_output_dir.mkdir(parents=True, exist_ok=True)
 
     # List for gif images
     images = []
@@ -100,22 +103,20 @@ def TD_Sarsa(
             # Creates gif, NOTE that render has to be either "human" or "rgb_array"
             if render != None:
                 if episode == episodes - 1:
-                    shutil.copy(
-                        Path(__file__).resolve().parent / "final_episode.png",
-                        output_dir
-                        / f"final_episode_step{episodes_dict[episode_num]:03d}.png",
+                    filename = (
+                        f"final_episode_step_{episodes_dict[episode_num]:02d}.png"
                     )
-                    image = Image.open(
-                        output_dir
-                        / f"final_episode_step{episodes_dict[episode_num]:03d}.png"
-                    )
-                    images.append(image)
-
+                    target_path = gif_output_dir / filename
+                    shutil.copy(output_path / "final_episode.png", target_path)
+                    with Image.open(target_path) as img:
+                        img.load()
+                        # Image.open() in a with block closes the file when the block ends, using copy() prevents memory issues related to that
+                        images.append(img.copy())
         episode_num += 1
 
     if render != None:
         images[0].save(
-            output_dir / f"optimal_path_run{run_number:03d}.gif",
+            gif_output_dir / f"optimal_path_run_{run_number:02d}.gif",
             save_all=True,
             append_images=images[1:],
             duration=200,
@@ -131,9 +132,9 @@ def main():
     alpha = 0.5  # delta learning-rate
     gamma = 1  # Next state-action pair weighing/ discounting-factor
     epsilon = 0.1  # greedy-epsilon policy
-    source_path = Path(__file__).resolve().parent
-    image_path = source_path / "run_graphs"
-    image_path.mkdir(exist_ok=True)
+    output_path = Path(__file__).resolve().parent / "outputs"
+    run_plots_path = output_path / "run_graphs"
+    run_plots_path.mkdir(parents=True, exist_ok=True)
 
     # Generate different seeds for each run
     seeds = [BASE_RANDOM_SEED + i for i in range(n_runs)]
@@ -153,7 +154,7 @@ def main():
             gamma=gamma,
             epsilon=epsilon,
             render="rgb_array",
-            render_path=source_path,
+            render_path=output_path,
             stochastic=False,
             run_number=i + 1,
         )
@@ -171,7 +172,7 @@ def main():
         plt.ylim(-5, 170)
         plt.yticks([0, 50, 100, 150, 170])
         plt.title("Steps taken for each episodes")
-        plt.savefig(image_path / f"run_{i + 1:04d}.png")
+        plt.savefig(run_plots_path / f"run_{i + 1:03d}.png")
 
 
 if __name__ == "__main__":

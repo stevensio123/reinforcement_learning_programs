@@ -271,7 +271,6 @@ class WindyGridWorld(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
-        
 
     # Just in case to close the env
     def close(self):
