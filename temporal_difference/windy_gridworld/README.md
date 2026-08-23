@@ -10,3 +10,9 @@ To install this environment, run the following commands:
 cd gymnasium_env
 pip install -e .
 ```
+
+### Run Program
+
+```{shell}
+python Windy_gridworld.py
+```
