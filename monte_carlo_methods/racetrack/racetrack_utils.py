@@ -66,7 +66,7 @@ class Racetrack:
             rng.uniform(
                 -max_steps, -min_steps, size=(len(self.racetrack), len(self.racetrack[0]), 5, 5, 3, 3)
             ),
-            3,
+            1,
         )  # NEW added rounding to 3 d.p for more accurate rounding
         # rng = np.random.default_rng()
         """
@@ -138,7 +138,7 @@ def get_next_state(Racetrack, state, action):
         return (x, y, vx, vy)
 
 
-def get_action_space(state):
+def get_action_space(Racetrack, state):
     """
     Takes in state (tuple of x, y, vx, vy) and returns list of possible actions (acceleration) that can be taken from that state.
     Acceleration can be -1, 0, or 1 in both x and y, and velocity < 5
@@ -150,7 +150,7 @@ def get_action_space(state):
         if 0 <= (vx + horizontal) < 5:
             for vertical in accel:
                 if 0 < (vy + vertical) < 5 or (
-                    (vx + horizontal) != 0 and 0 <= (vy + vertical) < 5
+                    ((vx + horizontal) != 0 or (x,y) in Racetrack.start_coord_list) and 0 <= (vy + vertical) < 5
                 ):
                     action_space.append([horizontal, vertical])
     return action_space
@@ -175,7 +175,7 @@ def get_policy(obj: Racetrack, epsilon=0.1):
                 for vy in range(action_values.shape[3]):
                     state = (x, y, vx, vy)
                     # choose optimal / random action:
-                    action_space_ls = get_action_space(state)
+                    action_space_ls = get_action_space(obj, state)
                     if random.random() > epsilon:
                         # take optimal action according to current state values
                         action_idx = get_optimal_action(obj, state, action_space_ls)
@@ -237,7 +237,7 @@ class Episode:
         self.terminal_locs = Racetrack.terminal_coord_list  # Moved to init as useful
         self.episode = []
 
-    def generate(self, Racetrack, epsilon, max_steps=100, start_pos=None):
+    def generate(self, Racetrack, epsilon, max_steps=100, breakdown=False, start_pos=None):
         """
         method to create episode by following the policy until it reaches terminal state.
         """
@@ -255,7 +255,7 @@ class Episode:
             if (x,y) in Racetrack.terminal_coord_list:
                 self.episode.append((current_state, [0,0]))
                 break
-            action_space_ls = get_action_space(current_state)
+            action_space_ls = get_action_space(Racetrack, current_state)
             if random.random() > epsilon:
                 # take optimal action according to current state values
                 action_idx = get_optimal_action(
@@ -275,6 +275,10 @@ class Episode:
                     vy,
                 )
                 return False
+            
+            if breakdown == True and random.random() < 0.1: # for chance of random breakdown following problem
+                action = [0,0]
+
             next_state = get_next_state(Racetrack, current_state, action)
             current_loc = (next_state[0], next_state[1])
             self.steps += 1
@@ -317,6 +321,9 @@ def generate_routes_gif(Racetrack, race_track):
         episode.generate(
             Racetrack, epsilon=0, start_pos=Racetrack.start_coord_list[each_start]
         )
+        if len(episode.episode) >= 100:
+            logger.debug("Failed at start position [%d,%d]", Racetrack.start_coord_list[each_start][0], Racetrack.start_coord_list[each_start][1])
+            return False
         for step in range(len(episode.episode)):
             track[len(Racetrack.racetrack[0]) - 1 - episode.episode[step][0][1]][
                 episode.episode[step][0][0]
